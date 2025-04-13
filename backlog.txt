@@ -1,0 +1,77 @@
+Mendil Mohamed Ali   
+ 
+ 1  
+ 
+Starting Point: Skill Exchange Project's Initial Product Backlog 
+ 
+Product Backlog 
+ID User Story (As a [role], I want to [action], so that [benefit]) Priority Story 
+Points 
+1 As a user, I want to register and log in, so that I can access my account 
+securely. High 5 
+2 As a user, I want to create and update my profile, so that others can 
+learn about my skills and interests. High 3 
+3 As a user, I want to add the skills I offer and request, so that others can 
+see what I can teach and what I want to learn. High 5 
+4 As a user, I want to search for specific skills or users, so that I can find 
+relevant skill matches. High 8 
+5 As a user, I want to view other users’ profiles, so that I can decide if 
+they are a good match for my needs. High 5 
+6 As a user, I want to send and receive connection requests, so that I can 
+initiate skill exchanges. High 8 
+7 As a user, I want to chat with matched users, so that I can coordinate 
+skill exchange details. Medium 8 
+8 As a user, I want to schedule sessions with others, so that I can manage 
+my time effectively. Medium 5 
+9 As a user, I want to leave reviews and ratings for others, so that I can 
+provide feedback on my experience. Low 3 
+10 As a user, I want to earn and spend credits for teaching and learning 
+skills, so that the system is fair and balanced. Medium 8 
+11 As a user, I want to receive notifications about new requests, chats, and 
+sessions, so that I stay informed. Low 5 
+12 As an admin, I want to moderate user activity and flagged content, so 
+that the platform remains safe and respectful. Low 8 
+13 As a user, I want to see a dashboard summarizing my skills, 
+connections, and sessions, so that I can track my progress. Medium 5 
+14 As a user, I want to sort and filter search results, so that I can find 
+matches faster. Low 5 
+15 As a user, I want to join group skill sessions, so that I can learn or teach 
+in a collaborative environment. Low 8 
+Mendil Mohamed Ali   
+16 As a user, I want to access the platform on mobile devices, so that I can 
+use it anywhere. 
+17 As a user, I want to update my availability, so that others know when I 
+am free for exchanges. 
+Low 
+13 
+Low 
+18 As a user, I want to report inappropriate behavior, so that I can help 
+maintain a safe environment. 
+3 
+Medium 
+Notes 
+• Priorities: Items are categorized as: 
+o High: Essential for MVP (e.g., registration, profile creation, skill search). 
+o Medium: Important but not immediately critical (e.g., chat, scheduling). 
+o Low: Nice-to-have features or advanced functionalities. 
+• Story Points: These are rough estimations of the complexity and effort needed to 
+complete each item. 
+Sprint Suggestions 
+• Sprint 1 (Foundations): 
+o User Registration/Login (Story 1) 
+o Profile Creation (Story 2) 
+o Skill Listings (Story 3) 
+• Sprint 2 (Core Functionality): 
+o Skill Search (Story 4) 
+o View Profiles (Story 5) 
+o Connection Requests (Story 6) 
+• Sprint 3 (Enhancements): 
+o Chat Functionality (Story 7) 
+o Scheduling (Story 8) 
+o Reviews and Ratings (Story 9) 
+• Sprint 4 (Polishing and Extras): 
+o Notifications (Story 11) 
+o Credits System (Story 10) 
+o Admin Moderation (Story 12) 
+2  
+5 

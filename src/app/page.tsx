@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
+import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import { FallbackImage } from "@/components/ui/fallback-image";
 
@@ -24,7 +23,7 @@ export default async function Home() {
               </h1>
               <p className="text-slate-600 text-lg leading-relaxed">
                 Connect with people who want to exchange knowledge. Teach what
-                you know, learn what you don't.
+                you know, learn what you don&apos;t.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 {!user ? (

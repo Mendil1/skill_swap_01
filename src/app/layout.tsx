@@ -5,8 +5,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import Image from "next/image";
 import { FallbackImage } from "@/components/ui/fallback-image";
+import MobileNav from "@/components/mobile-nav";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -26,6 +26,21 @@ export default async function RootLayout({
   const supabase = await createClient();
   const { data } = await supabase.auth.getSession();
   const user = data?.session?.user;
+
+  // Define navigation links to use in both desktop and mobile nav
+  const navLinks = [
+    { href: "/skills", label: "Explore Skills" },
+    { href: "/#how-it-works", label: "How It Works" },
+  ];
+
+  // Add authenticated-only links
+  const authLinks = user ? [
+    { href: "/users", label: "Find Users" },
+    { href: "/messages", label: "Messages" },
+  ] : [];
+
+  // All links combined
+  const allNavLinks = [...navLinks, ...authLinks];
 
   return (
     <html lang="en" className="scroll-smooth">
@@ -47,34 +62,19 @@ export default async function RootLayout({
               SkillSwap
             </Link>
 
+            {/* Desktop Navigation */}
             <nav className="hidden md:block">
               <ul className="flex items-center gap-6">
-                <li>
-                  <Link
-                    href="/skills"
-                    className="text-slate-700 hover:text-indigo-600 transition-colors"
-                  >
-                    Explore Skills
-                  </Link>
-                </li>
-                <li>
-                  <Link
-                    href="/#how-it-works"
-                    className="text-slate-700 hover:text-indigo-600 transition-colors"
-                  >
-                    How It Works
-                  </Link>
-                </li>
-                {user && (
-                  <li>
+                {allNavLinks.map((link) => (
+                  <li key={link.href}>
                     <Link
-                      href="/users"
+                      href={link.href}
                       className="text-slate-700 hover:text-indigo-600 transition-colors"
                     >
-                      Find Users
+                      {link.label}
                     </Link>
                   </li>
-                )}
+                ))}
               </ul>
             </nav>
 
@@ -90,7 +90,7 @@ export default async function RootLayout({
                     </div>
                     <span className="hidden md:inline">My Profile</span>
                   </Link>
-                  <Link href="/auth/logout">
+                  <Link href="/auth/logout" className="hidden md:block">
                     <Button
                       variant="outline"
                       size="sm"
@@ -101,7 +101,7 @@ export default async function RootLayout({
                   </Link>
                 </>
               ) : (
-                <Link href="/login">
+                <Link href="/login" className="hidden md:block">
                   <Button
                     variant="default"
                     size="sm"
@@ -111,6 +111,14 @@ export default async function RootLayout({
                   </Button>
                 </Link>
               )}
+              
+              {/* Mobile Navigation Trigger */}
+              <div className="md:hidden">
+                <MobileNav 
+                  links={allNavLinks} 
+                  user={user} 
+                />
+              </div>
             </div>
           </div>
         </header>

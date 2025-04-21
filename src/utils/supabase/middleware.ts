@@ -8,7 +8,7 @@ import { Database } from "@/types/supabase";
  */
 export async function updateSession(request: NextRequest) {
   // Create a response that we'll modify with cookies
-  let response = NextResponse.next({
+  const response = NextResponse.next({
     request: {
       headers: request.headers,
     },

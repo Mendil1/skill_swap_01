@@ -1,5 +1,4 @@
 import { Skeleton } from "@/components/ui/skeleton";
-import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import {
   Card,
@@ -13,8 +12,6 @@ import Link from "next/link";
 import { SearchForm } from "./search-form";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
-import { FallbackImage } from "@/components/ui/fallback-image";
-import { Button } from "@/components/ui/button";
 import { Suspense } from "react";
 import { AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

@@ -20,6 +20,7 @@ import {
   MessageSquare,
   User,
 } from "lucide-react";
+import ConnectionButton from "./components/connection-button";
 
 interface UserProfileProps {
   params: { id: string };
@@ -124,16 +125,11 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
                   </Button>
                 </Link>
               ) : (
-                <div className="flex flex-wrap gap-2 relative group">
-                  <Button className="flex items-center gap-2" disabled>
-                    <MessageSquare className="h-4 w-4" />
-                    <span>Connect</span>
-                  </Button>
-                  <div className="absolute bottom-full mb-2 right-0 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-xs text-white p-2 rounded pointer-events-none whitespace-nowrap">
-                    Coming soon! Connection requests will be available in the
-                    next update.
-                  </div>
-                </div>
+                <ConnectionButton 
+                  currentUserId={currentUser?.id || ''}
+                  profileUserId={userId}
+                  profileUserName={userData.full_name.split(" ")[0]}
+                />
               )}
             </div>
           </CardHeader>
@@ -334,15 +330,11 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
             Think you could help each other? Send a connection request to start
             exchanging skills!
           </p>
-          <div className="relative inline-block group">
-            <Button className="flex items-center gap-2" disabled>
-              <MessageSquare className="h-4 w-4" />
-              <span>Connect with {userData.full_name.split(" ")[0]}</span>
-            </Button>
-            <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-xs text-white p-2 rounded pointer-events-none whitespace-nowrap">
-              Coming soon in the next update!
-            </div>
-          </div>
+          <ConnectionButton 
+            currentUserId={currentUser?.id || ''}
+            profileUserId={userId}
+            profileUserName={userData.full_name.split(" ")[0]}
+          />
         </div>
       )}
     </div>

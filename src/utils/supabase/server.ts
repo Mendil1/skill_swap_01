@@ -18,11 +18,12 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name) {
-          // Simple get operation is safe in all contexts
-          return cookieStore.get(name)?.value;
+        async get(name) {
+          // Use async to properly handle cookie access
+          const cookie = cookieStore.get(name);
+          return cookie?.value;
         },
-        set(name, value, options) {
+        async set(name, value, options) {
           try {
             // Next.js only allows cookie modifications in Server Actions and Route Handlers
             cookieStore.set({
@@ -40,7 +41,7 @@ export async function createClient() {
             console.warn(`Cookie '${name}' could not be set:`, error);
           }
         },
-        remove(name, options) {
+        async remove(name, options) {
           try {
             // Removing cookies is done by setting an expired cookie
             cookieStore.set({

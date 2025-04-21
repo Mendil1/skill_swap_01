@@ -8,7 +8,6 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-  CardFooter,
 } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,12 +22,6 @@ interface Skill {
   name: string;
   description: string | null;
   category: string | null;
-}
-
-interface UserSkill {
-  user_skill_id: string;
-  type: "offer" | "request" | "both";
-  skills: Skill; // This is a single skill object, not an array
 }
 
 export default async function ProfilePage() {
@@ -287,7 +280,9 @@ export default async function ProfilePage() {
                   ) : (
                     <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-md">
                       <GraduationCap className="h-10 w-10 mx-auto text-slate-400 mb-2" />
-                      <p>You haven't added any skills you can teach yet.</p>
+                      <p>
+                        You haven&apos;t added any skills you can teach yet.
+                      </p>
                       <p className="text-sm">
                         Add skills using the form to the right.
                       </p>
@@ -345,7 +340,9 @@ export default async function ProfilePage() {
                   ) : (
                     <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-md">
                       <BookOpen className="h-10 w-10 mx-auto text-slate-400 mb-2" />
-                      <p>You haven't added any skills you want to learn yet.</p>
+                      <p>
+                        You haven&apos;t added any skills you want to learn yet.
+                      </p>
                       <p className="text-sm">
                         Add skills using the form to the right.
                       </p>

@@ -14,7 +14,9 @@ import { login, signup } from "./actions";
 import Link from "next/link";
 
 // Helper function to safely resolve searchParams
-async function resolveSearchParams(params: any) {
+async function resolveSearchParams(
+  params: Record<string, string | string[] | undefined>
+) {
   return new URLSearchParams(
     Array.isArray(params) ? params : Object.entries(params ?? {})
   );

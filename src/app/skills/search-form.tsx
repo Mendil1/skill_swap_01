@@ -5,11 +5,15 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Search, Loader2 } from "lucide-react";
 
-export default function SearchForm() {
+interface SearchFormProps {
+  query?: string;
+}
+
+export function SearchForm({ query }: SearchFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(searchParams.get("q") || "");
+  const [searchQuery, setSearchQuery] = useState(query || searchParams.get("q") || "");
   const [searchType, setSearchType] = useState(
     searchParams.get("type") || "all"
   );
@@ -78,3 +82,6 @@ export default function SearchForm() {
     </div>
   );
 }
+
+// Also add a default export for compatibility
+export default SearchForm;

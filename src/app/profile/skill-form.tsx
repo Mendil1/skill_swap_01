@@ -69,14 +69,14 @@ export default function SkillForm({
 
     try {
       // First, check if the skill already exists in the skills table
-      let { data: existingSkill } = await supabase
+      const { data: existingSkill } = await supabase
         .from("skills")
         .select("skill_id, description")
         .eq("name", skillName.trim())
         .single();
 
       let skillId;
-      let finalDescription = description.trim();
+      const finalDescription = description.trim();
 
       // If the skill doesn't exist, create it with the description and category
       if (!existingSkill) {
@@ -151,8 +151,8 @@ export default function SkillForm({
             </PopoverTrigger>
             <PopoverContent className="w-80 text-sm">
               Enter the name of the skill you want to add. Be specific but
-              concise (e.g., "JavaScript Programming" rather than just
-              "Programming").
+              concise (e.g., &quot;JavaScript Programming&quot; rather than just
+              &quot;Programming&quot;).
             </PopoverContent>
           </Popover>
         </div>

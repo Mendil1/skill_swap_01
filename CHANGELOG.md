@@ -1,5 +1,105 @@
 # SkillSwap Development Changelog
 
+## April 21, 2025 - Connection Request & Messaging Systems
+
+Today we completed two major features that enable direct interaction between users: the connection request system and the real-time messaging system. These features represent a significant milestone as they transform SkillSwap from a directory into a fully interactive platform.
+
+### 1. Connection Request System
+
+- Implemented a complete connection request workflow with multiple states: none, pending-sent, pending-received, accepted, and rejected
+- Created a dynamic ConnectionButton component that adapts its UI and functionality based on connection status
+- Added real-time status updates with loading indicators during state transitions
+- Integrated toast notifications for connection actions (send, accept, reject)
+- Implemented proper database schema with connection_requests table tracking sender, receiver, and status
+
+```tsx
+// Dynamic connection button that changes based on relationship status
+switch (connectionStatus) {
+  case 'none':
+    return <Button onClick={handleConnect}>Connect</Button>;
+  case 'pending-sent':
+    return <Button variant="outline" disabled>Request Pending</Button>;
+  case 'pending-received':
+    return (
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={handleReject}>Decline</Button>
+        <Button onClick={handleAccept}>Accept</Button>
+      </div>
+    );
+  // Additional states...
+}
+```
+
+### 2. Real-time Messaging System
+
+- Built a comprehensive messaging interface with real-time updates using Supabase Realtime
+- Implemented message grouping by date with clear visual separators
+- Added read indicators and timestamp displays for each message
+- Created smooth scrolling behavior with automatic scroll for new messages
+- Added visual indicators for unread messages when users are scrolled up
+- Implemented proper error handling and loading states
+- Optimized message input with character count and submission feedback
+
+```tsx
+// Real-time message subscription
+realtimeChannel
+  .on(
+    'postgres_changes',
+    { 
+      event: 'INSERT', 
+      schema: 'public', 
+      table: 'messages',
+      filter: `connection_id=eq.${conversationId}`
+    },
+    (payload) => {
+      // Handle new message...
+      setMessages(currentMessages => [...currentMessages, payload.new]);
+    }
+  )
+  .subscribe();
+```
+
+### 3. Conversation Management
+
+- Created a conversation list that displays all active connections
+- Implemented a message input component with character count and submission states
+- Built a responsive layout that adapts to different screen sizes
+- Added avatar displays with fallback initials for users without images
+- Implemented empty state handling with helpful guidance messages
+
+### 4. Connection & Messaging Integration
+
+- Connected the profile view to the messaging system through the connection button
+- Added direct navigation from accepted connections to conversation threads
+- Created a unified data model that links user profiles, connections, and message threads
+- Implemented proper database constraints to maintain data integrity
+
+### 5. UI/UX Enhancements
+
+- Added subtle animations for message transitions and status updates
+- Implemented visual feedback for all user actions (sending, accepting, etc.)
+- Created intuitive empty states with clear call-to-action guidance
+- Added responsive design elements that work well on mobile and desktop
+- Implemented proper error handling with recovery options
+
+### Next Steps
+
+- Develop notification system for new messages and connection requests
+- Implement blocking functionality for unwanted connections
+- Add file sharing capabilities to the messaging system
+- Build the scheduling system for skill exchange sessions
+
+## Notes
+
+The connection and messaging features now enable users to:
+
+1. Send connection requests to potential skill exchange partners
+2. Accept or decline incoming connection requests
+3. Engage in real-time conversations with accepted connections
+4. Manage multiple conversations through an intuitive interface
+
+These features complete the core interaction loop of the platform, allowing users to not just discover potential skill exchange partners but to actually connect and communicate with them.
+
 ## April 13, 2025 - Enhanced Search & Profile Features
 
 Today we significantly improved the skills search functionality and profile management experience. These enhancements make the platform more usable and provide a richer experience for users seeking to exchange skills.

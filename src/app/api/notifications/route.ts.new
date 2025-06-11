@@ -1,0 +1,184 @@
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
+
+export async function POST(request: Request) {
+  try {
+    const requestBody = await request.json();
+    const { userId, type, message, referenceId } = requestBody;
+
+    if (!userId || !type || !message) {
+      return new NextResponse(
+        JSON.stringify({ error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Use service role key to bypass RLS and ensure notifications can be created
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing Supabase environment variables");
+      return new NextResponse(
+        JSON.stringify({ error: "Server configuration error" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get cookie store - must await in Next.js 15+
+    const cookieStore = await cookies();
+
+    // Create Supabase client with service role key
+    const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
+      cookies: {
+        get: (name) => {
+          const cookie = cookieStore.get(name);
+          return cookie?.value;
+        },
+        set: () => {}, // Not setting cookies in this endpoint
+        remove: () => {}, // Not removing cookies in this endpoint
+      },
+      auth: {
+        persistSession: false,
+      },
+    });
+
+    const notificationData = {
+      user_id: userId,
+      type,
+      message,
+      is_read: false,
+      ...(referenceId && { reference_id: referenceId }),
+    };
+
+    console.log("Server creating notification:", notificationData);
+
+    // Insert notification
+    const { data: insertData, error: insertError } = await supabase
+      .from("notifications")
+      .insert(notificationData)
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("Insert error:", insertError);
+
+      // If the service role insert failed, this is likely a configuration error
+      return new NextResponse(
+        JSON.stringify({
+          error: "Failed to create notification",
+          details: insertError.message,
+          hint: "Check that your SUPABASE_SERVICE_ROLE_KEY is correct and that the appropriate policies are in place",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: insertData,
+    });
+  } catch (error: any) {
+    console.error("Server exception creating notification:", error);
+    return new NextResponse(
+      JSON.stringify({ error: error.message || "Internal server error" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}
+
+// Add GET endpoint for fetching notifications
+export async function GET(request: Request) {
+  try {
+    const url = new URL(request.url);
+    const userId = url.searchParams.get("userId");
+
+    if (!userId) {
+      return new NextResponse(
+        JSON.stringify({ error: "Missing userId parameter" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Use service role key to bypass RLS
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Missing Supabase environment variables");
+      return new NextResponse(
+        JSON.stringify({ error: "Server configuration error" }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Get cookie store - must await in Next.js 15+
+    const cookieStore = await cookies();
+
+    // Create Supabase client with service role key
+    const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
+      cookies: {
+        get: (name) => {
+          const cookie = cookieStore.get(name);
+          return cookie?.value;
+        },
+        set: () => {}, // Not setting cookies in this endpoint
+        remove: () => {}, // Not removing cookies in this endpoint
+      },
+      auth: {
+        persistSession: false,
+      },
+    });
+
+    // Fetch notifications for this user
+    const { data, error } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching notifications:", error);
+      return new NextResponse(
+        JSON.stringify({
+          error: error.message,
+          hint: "Make sure the service role key has proper permissions and the notifications table exists",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    return NextResponse.json({ success: true, data });
+  } catch (error: any) {
+    console.error("Server exception fetching notifications:", error);
+    return new NextResponse(
+      JSON.stringify({ error: error.message || "Internal server error" }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+  }
+}

@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MessageSquare, X, Check } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { createConnectionAcceptedNotification } from "@/utils/notifications";
 
 interface Connection {
   connection_id: string;
@@ -48,9 +49,7 @@ export default function ConnectionList({ userId }: { userId: string }) {
           .or(`sender_id.eq.${userId},receiver_id.eq.${userId}`)
           .order("created_at", { ascending: false });
 
-        if (connectionsError) throw connectionsError;
-
-        if (!data || data.length === 0) {
+        if (connectionsError) throw connectionsError;        if (!data || data.length === 0) {
           setConnections([]);
           setLoading(false);
           return;
@@ -62,9 +61,18 @@ export default function ConnectionList({ userId }: { userId: string }) {
           const partnerId = isSender
             ? connection.receiver_id
             : connection.sender_id;
+          
+          // Handle array format for relationships
+          const senderData = Array.isArray(connection.sender) 
+            ? connection.sender[0] 
+            : connection.sender;
+          const receiverData = Array.isArray(connection.receiver) 
+            ? connection.receiver[0] 
+            : connection.receiver;
+            
           const partnerName = isSender
-            ? connection.receiver.full_name
-            : connection.sender.full_name;
+            ? receiverData?.full_name
+            : senderData?.full_name;
 
           return {
             connection_id: connection.connection_id,
@@ -113,6 +121,15 @@ export default function ConnectionList({ userId }: { userId: string }) {
     try {
       setProcessingIds((prev) => [...prev, connectionId]);
 
+      // Get connection details to identify sender
+      const { data: connectionData, error: connectionError } = await supabase
+        .from("connection_requests")
+        .select("sender_id")
+        .eq("connection_id", connectionId)
+        .single();
+
+      if (connectionError) throw connectionError;
+
       const { error } = await supabase
         .from("connection_requests")
         .update({ status: "accepted" })
@@ -120,6 +137,22 @@ export default function ConnectionList({ userId }: { userId: string }) {
         .eq("receiver_id", userId);
 
       if (error) throw error;
+
+      // Get current user's name for the notification
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("full_name")
+        .eq("user_id", userId)
+        .single();
+
+      if (!userError && userData && connectionData) {
+        // Create notification for the sender that their request was accepted
+        await createConnectionAcceptedNotification(
+          connectionData.sender_id,
+          userData.full_name,
+          connectionId
+        );
+      }
 
       toast.success("Connection accepted");
       router.refresh();
@@ -155,9 +188,9 @@ export default function ConnectionList({ userId }: { userId: string }) {
 
   const handleMessage = (connectionId: string) => {
     console.log("Navigating to conversation with ID:", connectionId);
-    
+
     // Use direct anchor tag navigation to force a complete page refresh
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = `/messages/${connectionId}`;
     document.body.appendChild(link);
     link.click();

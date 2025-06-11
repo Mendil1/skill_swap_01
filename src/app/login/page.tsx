@@ -13,22 +13,18 @@ import { AuthForm } from "./auth-form";
 import { login, signup } from "./actions";
 import Link from "next/link";
 
-// Helper function to safely resolve searchParams
-async function resolveSearchParams(
-  params: Record<string, string | string[] | undefined>
-) {
-  return new URLSearchParams(
-    Array.isArray(params) ? params : Object.entries(params ?? {})
-  );
-}
-
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   // Next.js 15.3 approved async searchParams handling
-  const params = await resolveSearchParams(searchParams);
+  const resolvedParams = await searchParams;
+  const searchEntries: string[][] = Object.entries(resolvedParams ?? {}).map(([key, value]) => [
+    key, 
+    Array.isArray(value) ? value[0] || '' : value || ''
+  ]);
+  const params = new URLSearchParams(searchEntries);
   const message = params.get("message");
 
   // Supabase auth check with async client

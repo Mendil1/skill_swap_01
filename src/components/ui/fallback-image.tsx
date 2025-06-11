@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 
@@ -11,15 +11,20 @@ interface FallbackImageProps {
   height: number;
   fallbackSrc?: string;
   className?: string;
+  priority?: boolean;
+  loading?: "eager" | "lazy";
 }
 
-export function FallbackImage({
+// Memoize the component to prevent unnecessary re-renders
+export const FallbackImage = memo(function FallbackImage({
   src,
   alt,
   width,
   height,
   fallbackSrc = "/globe.svg",
   className,
+  priority = false,
+  loading,
 }: FallbackImageProps) {
   const [imgSrc, setImgSrc] = useState(src);
 
@@ -33,6 +38,9 @@ export function FallbackImage({
       onError={() => {
         setImgSrc(fallbackSrc);
       }}
+      priority={priority}
+      loading={loading}
+      unoptimized={src.startsWith('data:')} // Don't optimize data URLs
     />
   );
-}
+});

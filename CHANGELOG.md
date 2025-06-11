@@ -15,14 +15,20 @@ Today we completed two major features that enable direct interaction between use
 ```tsx
 // Dynamic connection button that changes based on relationship status
 switch (connectionStatus) {
-  case 'none':
+  case "none":
     return <Button onClick={handleConnect}>Connect</Button>;
-  case 'pending-sent':
-    return <Button variant="outline" disabled>Request Pending</Button>;
-  case 'pending-received':
+  case "pending-sent":
+    return (
+      <Button variant="outline" disabled>
+        Request Pending
+      </Button>
+    );
+  case "pending-received":
     return (
       <div className="flex gap-2">
-        <Button variant="outline" onClick={handleReject}>Decline</Button>
+        <Button variant="outline" onClick={handleReject}>
+          Decline
+        </Button>
         <Button onClick={handleAccept}>Accept</Button>
       </div>
     );
@@ -44,16 +50,16 @@ switch (connectionStatus) {
 // Real-time message subscription
 realtimeChannel
   .on(
-    'postgres_changes',
-    { 
-      event: 'INSERT', 
-      schema: 'public', 
-      table: 'messages',
-      filter: `connection_id=eq.${conversationId}`
+    "postgres_changes",
+    {
+      event: "INSERT",
+      schema: "public",
+      table: "messages",
+      filter: `connection_id=eq.${conversationId}`,
     },
     (payload) => {
       // Handle new message...
-      setMessages(currentMessages => [...currentMessages, payload.new]);
+      setMessages((currentMessages) => [...currentMessages, payload.new]);
     }
   )
   .subscribe();

@@ -1,0 +1,83 @@
+# SkillSwap Project Summary
+
+## Project Overview
+SkillSwap is a web application that facilitates skill exchange between users. The platform enables users to share their expertise and learn new skills from others in a collaborative environment. The core concept revolves around users offering skills they can teach while seeking skills they want to learn, creating a balanced ecosystem of knowledge exchange.
+
+## Technology Stack
+- **Frontend Framework**: Next.js 15.3.0 (React 19)
+- **Styling**: TailwindCSS 4 with additional UI components from Radix UI
+- **Backend/Database**: Supabase for authentication, database, and real-time features
+- **Form Management**: React Hook Form with Zod validation
+- **UI Components**: Custom UI components built with Radix UI primitives
+- **Notifications**: Sonner for toast notifications
+
+## Core Features
+Based on the product backlog and implemented code:
+
+1. **User Authentication**: Registration, login, and secure session management using Supabase auth
+2. **User Profiles**: Creation and management of user profiles with personal information and skills
+3. **Skill Management**: Users can add skills they offer and request, categorized appropriately
+4. **Search Functionality**: Search for specific skills or users to find relevant matches
+5. **User Connections**: Send and receive connection requests to initiate skill exchanges
+6. **Messaging System**: Chat functionality between connected users to coordinate exchanges
+7. **Notifications**: Real-time notifications for new requests, messages, and other activities
+8. **Mobile Responsiveness**: Accessible on various devices with responsive design
+
+## Database Structure
+The application uses a relational database structure with the following key tables:
+- **users**: Stores user account and profile information
+- **skills**: Master list of available skills with categories
+- **user_skills**: Junction table linking users to their offered/requested skills
+- **connection_requests**: Manages connection status between users
+- **messages**: Stores chat messages between connected users
+- **notifications**: Handles system notifications for users
+- **sessions**: For scheduling one-on-one skill exchange sessions
+- **reviews**: Stores ratings and feedback between users
+
+## Project Architecture
+- **App Router**: Utilizes Next.js App Router for routing and layouts
+- **Server Components**: Makes use of React Server Components for improved performance
+- **Authentication Middleware**: Secures routes requiring authentication
+- **Supabase Integration**: Uses Supabase client libraries for both client and server data access
+- **Component Structure**: Well-organized component hierarchy with reusable UI components
+
+## Implementation Status
+According to the backlog, the project has implemented:
+1. ✅ User registration and authentication
+2. ✅ Profile creation and management
+3. ✅ Skills listing and management
+4. ✅ Search functionality
+5. ✅ User profile viewing
+6. ✅ Connection requests
+7. ✅ Messaging between users
+8. ✅ Notification system
+
+Features that appear to be in progress or planned:
+1. 🔄 Reviews and ratings system
+2. 🔄 Credits system for teaching and learning
+3. 🔄 Session scheduling
+4. 🔄 Group sessions
+
+## Frontend Design
+The UI follows a clean, modern design with:
+- Gradient accent colors (indigo/purple)
+- Card-based components for skills and user listings
+- Responsive layout adaptable to different screen sizes
+- Clear navigation with mobile support
+- Accessible UI components from Radix UI library
+
+## Future Enhancements
+Based on the backlog:
+1. Advanced search filtering
+2. Group skill sessions
+3. Admin moderation tools
+4. Credits/reputation system
+5. Enhanced availability management
+6. Reporting inappropriate behavior
+
+## Development Workflow
+The project follows standard Next.js development practices with:
+- npm scripts for development, building, and linting
+- TypeScript for type safety
+- ESLint for code quality
+

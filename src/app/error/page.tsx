@@ -9,12 +9,13 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default function ErrorPage({
+export default async function ErrorPage({
   searchParams,
 }: {
-  searchParams: { message?: string };
+  searchParams: Promise<{ message?: string }>;
 }) {
-  const errorMessage = searchParams?.message || "An unexpected error occurred";
+  const params = await searchParams;
+  const errorMessage = params?.message || "An unexpected error occurred";
 
   return (
     <div className="container flex flex-col items-center justify-center min-h-[80vh] py-10">

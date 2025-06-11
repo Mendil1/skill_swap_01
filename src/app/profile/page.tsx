@@ -24,6 +24,12 @@ interface Skill {
   category: string | null;
 }
 
+interface UserSkill {
+  user_skill_id: string;
+  type: "offer" | "request" | "both";
+  skills: Skill[]; // This is actually an array, not a single object
+}
+
 export default async function ProfilePage() {
   const supabase = await createClient();
 
@@ -82,16 +88,15 @@ export default async function ProfilePage() {
 
   // Debug log to see the actual data structure
   console.log("User skills data:", JSON.stringify(userSkills, null, 2));
-
   // Safety check to ensure userSkills is an array
-  const safeUserSkills = Array.isArray(userSkills) ? userSkills : [];
+  const safeUserSkills: UserSkill[] = Array.isArray(userSkills) ? userSkills : [];
 
   // Filter skills by type - fix the data structure access
-  const offeredSkills = safeUserSkills.filter(
+  const offeredSkills: UserSkill[] = safeUserSkills.filter(
     (skill) => skill.type === "offer" || skill.type === "both"
   );
 
-  const requestedSkills = safeUserSkills.filter(
+  const requestedSkills: UserSkill[] = safeUserSkills.filter(
     (skill) => skill.type === "request" || skill.type === "both"
   );
 
@@ -264,15 +269,14 @@ export default async function ProfilePage() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-6">
-                  {offeredSkills.length > 0 ? (
-                    <ul className="space-y-3">
+                  {offeredSkills.length > 0 ? (                    <ul className="space-y-3">
                       {offeredSkills.map((item) => (
                         <SkillItem
                           key={item.user_skill_id}
                           userSkillId={item.user_skill_id}
-                          name={item.skills.name}
-                          description={item.skills.description}
-                          category={item.skills.category}
+                          name={item.skills[0]?.name || ""}
+                          description={item.skills[0]?.description}
+                          category={item.skills[0]?.category}
                           type={item.type}
                         />
                       ))}
@@ -323,16 +327,15 @@ export default async function ProfilePage() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="pt-6">
-                  {requestedSkills.length > 0 ? (
+                <CardContent className="pt-6">                  {requestedSkills.length > 0 ? (
                     <ul className="space-y-3">
                       {requestedSkills.map((item) => (
                         <SkillItem
                           key={item.user_skill_id}
                           userSkillId={item.user_skill_id}
-                          name={item.skills.name}
-                          description={item.skills.description}
-                          category={item.skills.category}
+                          name={item.skills[0]?.name || ""}
+                          description={item.skills[0]?.description}
+                          category={item.skills[0]?.category}
                           type={item.type}
                         />
                       ))}

@@ -7,7 +7,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, Loader2, Smile, PaperclipIcon, Info } from "lucide-react";
 import { toast } from "sonner";
 import { Tooltip } from "@/components/ui/tooltip";
-import { TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import eventBus from "@/utils/event-bus";
+import { sendMessageNotification, processPendingNotifications } from "@/utils/notification-retry";
 
 export default function MessageInput({
   conversationId,
@@ -31,16 +37,22 @@ export default function MessageInput({
     textarea.style.height = `${Math.min(textarea.scrollHeight, 150)}px`;
   }, [message]);
 
-  // Check for duplicate messages (send button double-click prevention)
+  // Check for pending notifications on component mount
+  useEffect(() => {
+    processPendingNotifications();
+  }, []);
+
+  const lastSentMessageTimestampRef = useRef<number>(0);
+
+  // Check for duplicate messages
   const isDuplicateMessage = (content: string) => {
     if (lastSentMessageRef.current === content) {
-      const timeSinceLastSend = Date.now() - (lastSentMessageRef.current ? lastSentMessageTimestampRef.current : 0);
+      const timeSinceLastSend =
+        Date.now() - lastSentMessageTimestampRef.current;
       return timeSinceLastSend < 2000; // Prevent duplicate sends within 2 seconds
     }
     return false;
   };
-
-  const lastSentMessageTimestampRef = useRef<number>(0);
 
   const handleSendMessage = async (e: FormEvent) => {
     e.preventDefault();
@@ -48,7 +60,7 @@ export default function MessageInput({
     const trimmedMessage = message.trim();
     if (!trimmedMessage) return;
 
-    // Prevent duplicate messages (e.g., from double-clicking send)
+    // Prevent duplicate messages
     if (isDuplicateMessage(trimmedMessage)) {
       console.log("Preventing duplicate message send");
       return;
@@ -56,16 +68,14 @@ export default function MessageInput({
 
     try {
       setSending(true);
-      
+
       // Save message for duplicate check
       lastSentMessageRef.current = trimmedMessage;
       lastSentMessageTimestampRef.current = Date.now();
-      
+
       // Clear input immediately for better UX
       setMessage("");
-      
-      console.log("Sending message to conversation:", conversationId);
-      
+
       // Insert message into database
       const { data, error } = await supabaseRef.current
         .from("messages")
@@ -80,15 +90,171 @@ export default function MessageInput({
         console.error("Error sending message:", error);
         throw error;
       }
-      
+
       console.log("Message sent successfully:", data);
-      
+
+      // Get connection details to find recipient
+      const { data: connectionData, error: connectionError } =
+        await supabaseRef.current
+          .from("connection_requests")
+          .select("sender_id, receiver_id")
+          .eq("connection_id", conversationId)
+          .single();
+
+      if (connectionError) {
+        console.error("Error fetching connection details:", connectionError);
+        throw connectionError;
+      }
+
+      // Determine recipient ID
+      const recipientId =
+        connectionData.sender_id === userId
+          ? connectionData.receiver_id
+          : connectionData.sender_id;
+
+      console.log("Creating notification for recipient ID:", recipientId);
+
+      // Get sender's name for the notification
+      const { data: userData, error: userError } = await supabaseRef.current
+        .from("users")
+        .select("full_name")
+        .eq("user_id", userId)
+        .single();
+
+      if (userError) {
+        console.error("Error fetching user details:", userError);
+        throw userError;
+      }
+
+      console.log("Sender name for notification:", userData.full_name);      // Create a server-side notification
+      try {
+        // Use our retry mechanism for reliable notification delivery
+        sendMessageNotification(recipientId, userData.full_name, conversationId)
+          .then(success => {
+            console.log("Message notification sent successfully:", success);
+          })
+          .catch(err => {
+            console.error("Error with notification retry:", err);
+          });
+      } catch (serverError) {
+        console.error("Error creating server notification:", serverError);
+      }
+
+      // Create a simple browser notification storage as fallback
+      // Store in localStorage
+      try {
+        // Store sender ID for matching
+        localStorage.setItem("currentUserId", userId);
+
+        // Get existing notifications
+        let existingNotifications = [];
+        try {
+          existingNotifications = JSON.parse(
+            localStorage.getItem("local_notifications") || "[]"
+          );
+        } catch (parseError) {
+          console.error("Error parsing localStorage, resetting:", parseError);
+          existingNotifications = [];
+        }
+
+        console.log(
+          "Existing notifications in localStorage:",
+          existingNotifications.length
+        );
+
+        // Get recipient's email if available
+        let recipientEmail = "";
+        try {
+          const { data: recipientData, error: recipientError } =
+            await supabaseRef.current
+              .from("users")
+              .select("email")
+              .eq("user_id", recipientId)
+              .single();
+
+          if (recipientData && !recipientError) {
+            recipientEmail = recipientData.email;
+            console.log("Found recipient email:", recipientEmail);
+          }
+        } catch (emailError) {
+          console.error("Error fetching recipient email:", emailError);
+        }
+
+        // Create a new notification
+        const newNotification = {
+          id: `local-${Date.now()}`,
+          recipient_id: recipientId,
+          recipient_email: recipientEmail, // Add the email for better matching
+          sender_id: userId,
+          sender_name: userData.full_name,
+          message: `${userData.full_name} sent you a message`,
+          type: "message",
+          conversation_id: conversationId,
+          is_read: false,
+          created_at: new Date().toISOString(),
+        };
+
+        console.log("Created new notification:", newNotification);
+
+        // Add to existing notifications
+        existingNotifications.push(newNotification);
+
+        // Save back to localStorage
+        localStorage.setItem(
+          "local_notifications",
+          JSON.stringify(existingNotifications)
+        );
+        console.log("Saved updated notifications to localStorage");
+
+        // Store recipient ID for later matching
+        if (recipientId) {
+          localStorage.setItem("lastRecipientId", recipientId);
+        }        // Trigger custom event for notification bell
+        try {
+          console.log("Dispatching notification events");
+
+          // Use our event bus for reliable event emission
+          eventBus.emit("new-notification", newNotification);
+
+          // Also use the legacy approach for backward compatibility
+          const notificationEvent = new CustomEvent("new-notification", {
+            detail: newNotification,
+          });
+          window.dispatchEvent(notificationEvent);
+
+          window.dispatchEvent(
+            new CustomEvent("local-notification", {
+              detail: newNotification,
+            })
+          );
+
+          // Emit a specific message event that notification components can listen for
+          eventBus.emit("new-message", {
+            senderId: userId,
+            recipientId: recipientId,
+            conversationId: conversationId,
+            timestamp: Date.now()
+          });
+
+          console.log("Events dispatched successfully");
+
+          // For cross-tab notification, also store the current time of the last notification
+          localStorage.setItem("notification_timestamp", Date.now().toString());
+        } catch (eventError) {
+          console.error("Error dispatching notification event:", eventError);
+        }
+
+        console.log("Local notification created for recipient", recipientId);
+      } catch (storageError) {
+        console.error("Error creating local notification:", storageError);
+      }
+
       // Focus the textarea after sending
       textareaRef.current?.focus();
     } catch (err) {
       console.error("Error sending message:", err);
       toast.error("Failed to send message. Please try again.");
-      
+
       // Restore the message if sending failed
       setMessage(trimmedMessage);
     } finally {
@@ -131,7 +297,7 @@ export default function MessageInput({
               rows={1}
             />
           </div>
-          
+
           {/* Action buttons */}
           <div className="flex items-center gap-1 ml-2">
             <Tooltip>
@@ -149,7 +315,7 @@ export default function MessageInput({
               </TooltipTrigger>
               <TooltipContent>Add emoji</TooltipContent>
             </Tooltip>
-            
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -165,12 +331,16 @@ export default function MessageInput({
               </TooltipTrigger>
               <TooltipContent>Attach file</TooltipContent>
             </Tooltip>
-            
+
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   type="submit"
-                  className={`h-9 w-9 rounded-full ${message.trim() ? 'bg-indigo-600 hover:bg-indigo-700' : 'bg-indigo-400'} text-white transition-colors`}
+                  className={`h-9 w-9 rounded-full ${
+                    message.trim()
+                      ? "bg-indigo-600 hover:bg-indigo-700"
+                      : "bg-indigo-400"
+                  } text-white transition-colors`}
                   disabled={sending || !message.trim()}
                 >
                   {sending ? (
@@ -180,11 +350,13 @@ export default function MessageInput({
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Send message{message.trim() ? '' : ' (type something first)'}</TooltipContent>
+              <TooltipContent>
+                Send message{message.trim() ? "" : " (type something first)"}
+              </TooltipContent>
             </Tooltip>
           </div>
         </div>
-        
+
         <div className="mt-2 text-xs text-slate-400 flex items-center px-2">
           <Info className="h-3 w-3 mr-1" />
           <span>Press Shift+Enter for a new line</span>

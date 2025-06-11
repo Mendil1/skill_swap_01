@@ -13,11 +13,24 @@ export async function updateSession(request: NextRequest) {
       headers: request.headers,
     },
   });
-
   // Create a Supabase client specifically for the middleware context
+  // Hard-coded fallback values (only for development, not for production)
+  const fallbackUrl = "https://sogwgxkxuuvvvjbqlcdo.supabase.co";
+  // Using anonymous key for authentication operations in middleware
+  const fallbackAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvZ3dneGt4dXV2dnZqYnFsY2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTg1NDcsImV4cCI6MjA1OTk3NDU0N30.MGr4l7qK4Gj1tmVeSZhNmepQfVPfOh2OxgaXOgCigrs";
+
+  // Use environment variables or fall back to hard-coded values
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || fallbackUrl;
+  // Use anonymous key for authentication operations in middleware
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || fallbackAnonKey;
+
+  console.log("[Middleware] Using ANONYMOUS KEY for authentication");
+  console.log("[Middleware] Supabase URL:", supabaseUrl ? "defined" : "undefined");
+  console.log("[Middleware] Anonymous Key:", supabaseKey ? "defined" : "undefined");
+
   const supabase = createServerClient<Database>(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         get(name: string) {

@@ -17,18 +17,18 @@ import {
   Calendar,
   GraduationCap,
   Mail,
-  MessageSquare,
   User,
 } from "lucide-react";
 import ConnectionButton from "./components/connection-button";
 
 interface UserProfileProps {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }
 
 export default async function UserProfilePage({ params }: UserProfileProps) {
   const supabase = await createClient();
-  const userId = params.id;
+  const resolvedParams = await params;
+  const userId = resolvedParams.id;
 
   // Fetch user data
   const { data: userData, error: userError } = await supabase
@@ -36,9 +36,8 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
     .select("*")
     .eq("user_id", userId)
     .single();
-
   // Fetch user skills with their skill details
-  const { data: userSkills, error: skillsError } = await supabase
+  const { data: userSkills } = await supabase
     .from("user_skills")
     .select(
       `
@@ -210,8 +209,7 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="pt-6">
-              {offeredSkills.length > 0 ? (
+            <CardContent className="pt-6">              {offeredSkills.length > 0 ? (
                 <div className="space-y-4">
                   {offeredSkills.map((skill) => (
                     <div
@@ -219,11 +217,11 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
                       className="border-b pb-4 last:border-0"
                     >
                       <h3 className="font-medium text-lg mb-1">
-                        {skill.skills.name}
+                        {skill.skills[0]?.name}
                       </h3>
-                      {skill.skills.description && (
+                      {skill.skills[0]?.description && (
                         <p className="text-slate-600">
-                          {skill.skills.description}
+                          {skill.skills[0]?.description}
                         </p>
                       )}
                     </div>
@@ -277,8 +275,7 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="pt-6">
-              {requestedSkills.length > 0 ? (
+            <CardContent className="pt-6">              {requestedSkills.length > 0 ? (
                 <div className="space-y-4">
                   {requestedSkills.map((skill) => (
                     <div
@@ -286,11 +283,11 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
                       className="border-b pb-4 last:border-0"
                     >
                       <h3 className="font-medium text-lg mb-1">
-                        {skill.skills.name}
+                        {skill.skills[0]?.name}
                       </h3>
-                      {skill.skills.description && (
+                      {skill.skills[0]?.description && (
                         <p className="text-slate-600">
-                          {skill.skills.description}
+                          {skill.skills[0]?.description}
                         </p>
                       )}
                     </div>

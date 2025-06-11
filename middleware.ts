@@ -31,11 +31,25 @@ export async function middleware(request: NextRequest) {
   if (authRoutes.includes(pathname) && hasAuthCookie) {
     return NextResponse.redirect(new URL("/", request.url));
   }
-
   // Continue with the updated session
   return response;
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  // Only run middleware on routes that need auth checking
+  // More specific matching for better performance
+  matcher: [
+    // Protected routes that need auth
+    '/dashboard/:path*',
+    '/profile/:path*',
+    '/skills/:path*',
+    '/messages/:path*',
+    '/notifications/:path*',
+    // Auth routes
+    '/login',
+    '/signup',
+    // Home page and top level routes
+    '/',
+    '/users/:path*',
+  ],
 };

@@ -1,0 +1,16 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "ms-vscode.vscode-typescript-next",
+    "mikestead.dotenv",
+    "editorconfig.editorconfig",
+    "streetsidesoftware.code-spell-checker",
+    "github.copilot",
+    "eamodio.gitlens",
+    "yoavbls.pretty-ts-errors",
+    "christian-kohler.path-intellisense",
+    "wix.vscode-import-cost"
+  ]
+}

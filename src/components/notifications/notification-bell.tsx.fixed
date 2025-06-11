@@ -1,0 +1,510 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { Bell } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { createClient } from "@/utils/supabase/client";
+import {
+  markNotificationAsRead,
+  markAllNotificationsAsRead,
+} from "@/utils/notifications";
+import eventBus from "@/utils/event-bus";
+import { processPendingNotifications } from "@/utils/notification-retry";
+
+// Create a component with persistent notification state
+export default function NotificationBell() {
+  interface Notification {
+    id: string;
+    user_id: string;
+    type: string;
+    message: string;
+    is_read: boolean;
+    reference_id?: string;
+    created_at: string;
+  }
+
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [userId, setUserId] = useState("");
+  const [lastFetched, setLastFetched] = useState(0); // Track last fetch time
+
+  // Count unread notifications
+  const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+  // Simplified function to get current user ID from Supabase
+  const getCurrentUser = async () => {
+    try {
+      // Check localStorage first for better performance
+      if (
+        typeof window !== "undefined" &&
+        localStorage.getItem("currentUserId")
+      ) {
+        return localStorage.getItem("currentUserId");
+      }
+
+      const supabase = createClient();
+      const { data } = await supabase.auth.getUser();
+
+      if (data?.user?.id) {
+        // Cache for future use
+        if (typeof window !== "undefined") {
+          localStorage.setItem("currentUserId", data.user.id);
+        }
+        return data.user.id;
+      }
+
+      return null;
+    } catch (e) {
+      console.error("Error getting current user:", e);
+      return null;
+    }
+  };
+
+  // Function to fetch notifications from server API with throttling
+  const fetchNotifications = async (force = false) => {
+    // Don't fetch if we've fetched within the last 30 seconds, unless forced
+    const now = Date.now();
+    if (!force && lastFetched > 0 && now - lastFetched < 30000) {
+      console.log("Skipping notification fetch - throttled");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Make sure we have a userId
+      const currentUserId = userId || (await getCurrentUser());
+
+      if (!currentUserId) {
+        console.log("No user ID available to fetch notifications");
+        setLoading(false);
+        return;
+      }
+
+      // Set last fetched time
+      setLastFetched(now);
+
+      // 1. Try fetching from the API endpoint
+      try {
+        console.log("Fetching notifications for user:", currentUserId);
+        const response = await fetch(
+          `/api/notifications?userId=${currentUserId}`,
+          {
+            cache: "no-store",
+            headers: {
+              "Cache-Control": "no-cache",
+            },
+          }
+        );
+
+        if (response.ok) {
+          const result = await response.json();
+
+          if (result.success && Array.isArray(result.data)) {
+            // Format the notifications to have consistent property names
+            const serverNotifications = result.data.map((n: any) => ({
+              id: n.id || n.notification_id,
+              user_id: n.user_id,
+              type: n.type,
+              message: n.message,
+              is_read: n.is_read,
+              reference_id: n.reference_id,
+              created_at: n.created_at,
+            }));
+
+            // Combine with any local notifications
+            const combinedNotifications = combineWithLocalNotifications(
+              serverNotifications,
+              currentUserId
+            );
+
+            setNotifications(combinedNotifications);
+            setUserId(currentUserId);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (apiError) {
+        console.error("API error fetching notifications:", apiError);
+      }
+
+      // 2. Fallback to direct Supabase query
+      try {
+        const supabase = createClient();
+        const { data, error } = await supabase
+          .from("notifications")
+          .select("*")
+          .eq("user_id", currentUserId)
+          .order("created_at", { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          // Format the notifications consistently
+          const serverNotifications = data.map((n: any) => ({
+            id: n.notification_id,
+            user_id: n.user_id,
+            type: n.type,
+            message: n.message,
+            is_read: n.is_read,
+            reference_id: n.reference_id,
+            created_at: n.created_at,
+          }));
+
+          // Combine with any local notifications
+          const combinedNotifications = combineWithLocalNotifications(
+            serverNotifications,
+            currentUserId
+          );
+
+          setNotifications(combinedNotifications);
+          setUserId(currentUserId);
+        }
+      } catch (dbError) {
+        console.error("Database error fetching notifications:", dbError);
+
+        // 3. Last resort: just use local storage
+        if (typeof window !== "undefined") {
+          const localOnly = getLocalNotifications(currentUserId);
+          setNotifications(localOnly);
+        }
+      }
+    } catch (e) {
+      console.error("Error in fetchNotifications:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper to get local notifications
+  const getLocalNotifications = (userIdToMatch: string): Notification[] => {
+    if (typeof window === "undefined") return [];
+
+    try {
+      const storedNotifications = JSON.parse(
+        localStorage.getItem("local_notifications") || "[]"
+      );
+
+      return storedNotifications
+        .filter(
+          (n: any) => n.user_id === userIdToMatch || n.recipient_id === userIdToMatch
+        )
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+    } catch (e) {
+      console.error("Error getting local notifications:", e);
+      return [];
+    }
+  };
+
+  // Helper to combine server and local notifications
+  const combineWithLocalNotifications = (
+    serverNotifications: Notification[],
+    userIdToMatch: string
+  ): Notification[] => {
+    if (typeof window === "undefined") return serverNotifications;
+
+    try {
+      // Get local notifications for this user
+      const localNotifications = getLocalNotifications(userIdToMatch);
+
+      // Create a Set of server notification IDs for fast lookup
+      const serverIds = new Set(serverNotifications.map((n) => n.id));
+
+      // Filter local notifications to only include those not already in server notifications
+      const localOnly = localNotifications.filter((n) => !serverIds.has(n.id));
+
+      // Combine and sort
+      return [...serverNotifications, ...localOnly].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    } catch (e) {
+      console.error("Error combining notifications:", e);
+      return serverNotifications;
+    }
+  };
+
+  // Handle marking a notification as read
+  const handleMarkAsRead = async (notificationId: string) => {
+    // Try to mark as read in db/localStorage
+    await markNotificationAsRead(notificationId);
+
+    // Update local state immediately for better UX
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, is_read: true } : n))
+    );
+  };
+
+  // Handle marking all notifications as read
+  const handleMarkAllAsRead = async () => {
+    if (userId) {
+      await markAllNotificationsAsRead(userId);
+
+      // Update local state immediately
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    }
+  };
+
+  // Get link for notification based on type
+  const getNotificationLink = (notification: Notification) => {
+    switch (notification.type) {
+      case "connection_request":
+        return `/profile?tab=connections`;
+      case "connection_accepted":
+        return notification.reference_id
+          ? `/users/${notification.reference_id}`
+          : `/profile?tab=connections`;
+      case "message":
+        return notification.reference_id
+          ? `/messages/${notification.reference_id}`
+          : `/messages`;
+      default:
+        return `/notifications`;
+    }
+  };
+
+  // Initialize and set up real-time updates
+  useEffect(() => {
+    let mounted = true;
+    let checkInterval = 120000; // Increase to 120 seconds (2 minutes)
+    let supabaseChannel: any = null;
+    let notificationUpdateTimeout: NodeJS.Timeout | null = null;
+
+    const initialize = async () => {
+      // Get user and fetch notifications
+      const currentUserId = await getCurrentUser();
+      if (currentUserId && mounted) {
+        setUserId(currentUserId);
+        fetchNotifications();
+
+        // Process any pending notifications
+        processPendingNotifications();
+
+        // Set up Supabase realtime subscription
+        try {
+          const supabase = createClient();
+
+          // Subscribe to notifications table changes for this user
+          supabaseChannel = supabase
+            .channel('notification-updates')
+            .on(
+              'postgres_changes',
+              {
+                event: '*', // Listen for all events (inserts, updates, deletes)
+                schema: 'public',
+                table: 'notifications',
+                filter: `user_id=eq.${currentUserId}`,
+              },
+              (payload: any) => {
+                console.log('Supabase realtime notification update:', payload);
+
+                // Debounce to prevent multiple fetches for batch updates
+                if (notificationUpdateTimeout) {
+                  clearTimeout(notificationUpdateTimeout);
+                }
+
+                notificationUpdateTimeout = setTimeout(() => {
+                  if (mounted) {
+                    fetchNotifications();
+                  }
+                }, 500);
+              }
+            )
+            .subscribe((status: any) => {
+              console.log('Supabase notification subscription status:', status);
+            });
+        } catch (error) {
+          console.error('Error setting up realtime subscription:', error);
+        }
+      }
+    };
+
+    initialize();
+
+    // Check if we're in the messages area to set a more frequent refresh
+    const isInMessagesArea = typeof window !== 'undefined' &&
+      window.location.pathname.includes('/messages');
+
+    // Set more frequent checks when in messages section
+    if (isInMessagesArea) {
+      checkInterval = 20000; // Check every 20 seconds in messages area
+    }
+
+    // Set up interval with longer polling
+    const pollInterval = setInterval(() => {
+      if (mounted) {
+        fetchNotifications();
+      }
+    }, checkInterval);
+
+    // Subscribe to event bus events
+    const newNotificationUnsubscribe = eventBus.on("new-notification", (data: any) => {
+      if (userId && (data.user_id === userId || data.recipient_id === userId)) {
+        console.log("EventBus: Received new notification event", data);
+        fetchNotifications();
+      }
+    });
+
+    const newMessageUnsubscribe = eventBus.on("new-message", (data: any) => {
+      if (userId && data.recipientId === userId) {
+        console.log("EventBus: Received new message event", data);
+        // Force immediate refresh for messages
+        fetchNotifications();
+      }
+    });
+
+    // Listen for local storage updates (cross-tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "local_notifications" || e.key === "notification_timestamp") {
+        if (userId) {
+          fetchNotifications();
+        }
+      }
+    };
+
+    // Listen for custom events for new notifications
+    const handleLocalNotification = (e: Event) => {
+      const customEvent = e as any;
+      if (
+        customEvent.detail &&
+        userId &&
+        (customEvent.detail.user_id === userId || customEvent.detail.recipient_id === userId)
+      ) {
+        fetchNotifications();
+      }
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("storage", handleStorageChange);
+      window.addEventListener("local-notification", handleLocalNotification as EventListener);
+      // Also listen for the "new-notification" event from message-input.tsx
+      window.addEventListener("new-notification", handleLocalNotification as EventListener);
+    }
+
+    // Clean up
+    return () => {
+      mounted = false;
+      clearInterval(pollInterval);
+
+      // Clean up Supabase realtime subscription
+      if (supabaseChannel) {
+        const supabase = createClient();
+        supabase.removeChannel(supabaseChannel);
+      }
+
+      // Clean up event bus subscriptions
+      newNotificationUnsubscribe();
+      newMessageUnsubscribe();
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener("storage", handleStorageChange);
+        window.removeEventListener(
+          "local-notification",
+          handleLocalNotification as EventListener
+        );
+        window.removeEventListener(
+          "new-notification",
+          handleLocalNotification as EventListener
+        );
+      }
+
+      if (notificationUpdateTimeout) {
+        clearTimeout(notificationUpdateTimeout);
+      }
+    };
+  }, [userId]);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          className="relative p-1 rounded-full hover:bg-slate-100 transition-colors"
+          onClick={(e) => { e.preventDefault(); fetchNotifications(true); }} // Refresh on click
+        >
+          <Bell className="h-5 w-5 text-slate-700" />
+          {unreadCount > 0 && (
+            <Badge className="absolute -top-2 -right-2 px-1.5 h-5 min-w-5 flex items-center justify-center rounded-full bg-indigo-600 text-white text-xs">
+              {unreadCount > 9 ? "9+" : unreadCount}
+            </Badge>
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="end">
+        <div className="flex items-center justify-between p-3 border-b">
+          <h3 className="font-medium">Notifications</h3>
+          {unreadCount > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleMarkAllAsRead}
+              className="text-xs text-indigo-600 hover:text-indigo-700"
+            >
+              Mark all as read
+            </Button>
+          )}
+        </div>
+
+        <div className="max-h-80 overflow-y-auto">
+          {loading ? (
+            <div className="py-8 text-center text-slate-500">
+              <p>Loading notifications...</p>
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="py-8 text-center text-slate-500">
+              <p>No notifications yet</p>
+            </div>
+          ) : (
+            <ul className="divide-y">
+              {notifications.map((notification) => (
+                <li
+                  key={notification.id}
+                  className={`p-3 hover:bg-slate-50 transition-colors ${
+                    !notification.is_read ? "bg-indigo-50" : ""
+                  }`}
+                >
+                  <Link
+                    href={getNotificationLink(notification)}
+                    onClick={() => {
+                      handleMarkAsRead(notification.id);
+                      setOpen(false);
+                    }}
+                    className="block"
+                  >
+                    <p className="text-sm text-slate-800">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {new Date(notification.created_at).toLocaleString()}
+                    </p>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="p-2 border-t text-center">
+          <Link
+            href="/notifications"
+            className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+            onClick={() => setOpen(false)}
+          >
+            View all notifications
+          </Link>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}

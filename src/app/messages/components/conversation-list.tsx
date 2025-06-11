@@ -6,9 +6,15 @@ import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Search, Clock, AlertCircle, MessageSquare } from "lucide-react";
+import {
+  UserPlus,
+  Search,
+  Clock,
+  AlertCircle,
+  MessageSquare,
+} from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow } from "date-fns";
 
 interface Conversation {
   connection_id: string;
@@ -63,19 +69,23 @@ export default function ConversationList({ userId }: { userId: string }) {
           connections.map(async (connection) => {
             // Determine which user is the conversation partner
             const isUserSender = connection.sender_id === userId;
-            
+
             // Access the first item if it's an array, otherwise use it directly
             const partnerId = isUserSender
               ? connection.receiver_id
               : connection.sender_id;
-              
+
             // Safely access sender/receiver data which might be an array
-            const senderData = Array.isArray(connection.sender) ? connection.sender[0] : connection.sender;
-            const receiverData = Array.isArray(connection.receiver) ? connection.receiver[0] : connection.receiver;
-            
+            const senderData = Array.isArray(connection.sender)
+              ? connection.sender[0]
+              : connection.sender;
+            const receiverData = Array.isArray(connection.receiver)
+              ? connection.receiver[0]
+              : connection.receiver;
+
             const partnerName = isUserSender
-              ? (receiverData?.full_name || "Unknown User")
-              : (senderData?.full_name || "Unknown User");
+              ? receiverData?.full_name || "Unknown User"
+              : senderData?.full_name || "Unknown User";
 
             // Get the latest message for this connection
             const { data: messages, error: messagesError } = await supabase
@@ -92,9 +102,10 @@ export default function ConversationList({ userId }: { userId: string }) {
             // This is a placeholder for now
             const unreadCount = 0;
 
-            const lastMessageTime = messages && messages.length > 0
-              ? messages[0].sent_at
-              : (connection.created_at || new Date().toISOString());
+            const lastMessageTime =
+              messages && messages.length > 0
+                ? messages[0].sent_at
+                : connection.created_at || new Date().toISOString();
 
             return {
               connection_id: connection.connection_id,
@@ -152,23 +163,28 @@ export default function ConversationList({ userId }: { userId: string }) {
   }, [supabase, userId]);
 
   // Filter conversations based on search query
-  const filteredConversations = conversations.filter(convo => 
+  const filteredConversations = conversations.filter((convo) =>
     convo.partner_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   if (loading) {
     return (
       <div className="p-3 space-y-3">
-        {Array(3).fill(0).map((_, i) => (
-          <div key={i} className="flex items-center p-3 rounded-lg border border-slate-100 animate-pulse">
-            <Skeleton className="h-12 w-12 rounded-full" />
-            <div className="ml-3 space-y-2 flex-1">
-              <Skeleton className="h-4 w-[140px]" />
-              <Skeleton className="h-3 w-[200px]" />
+        {Array(3)
+          .fill(0)
+          .map((_, i) => (
+            <div
+              key={i}
+              className="flex items-center p-3 rounded-lg border border-slate-100 animate-pulse"
+            >
+              <Skeleton className="h-12 w-12 rounded-full" />
+              <div className="ml-3 space-y-2 flex-1">
+                <Skeleton className="h-4 w-[140px]" />
+                <Skeleton className="h-3 w-[200px]" />
+              </div>
+              <Skeleton className="h-3 w-10 ml-2" />
             </div>
-            <Skeleton className="h-3 w-10 ml-2" />
-          </div>
-        ))}
+          ))}
       </div>
     );
   }
@@ -177,7 +193,9 @@ export default function ConversationList({ userId }: { userId: string }) {
     return (
       <div className="p-6 text-center">
         <AlertCircle className="h-10 w-10 text-red-500 mx-auto mb-3" />
-        <p className="text-red-500 font-medium mb-2">Unable to load conversations</p>
+        <p className="text-red-500 font-medium mb-2">
+          Unable to load conversations
+        </p>
         <p className="text-sm text-slate-500 mb-4">{error}</p>
         <Button variant="outline" size="sm" onClick={() => router.refresh()}>
           Try Again
@@ -192,9 +210,12 @@ export default function ConversationList({ userId }: { userId: string }) {
         <div className="bg-indigo-50 h-16 w-16 rounded-full flex items-center justify-center mx-auto mb-4">
           <MessageSquare className="h-8 w-8 text-indigo-500" />
         </div>
-        <h3 className="text-lg font-medium text-slate-800 mb-2">No conversations yet</h3>
+        <h3 className="text-lg font-medium text-slate-800 mb-2">
+          No conversations yet
+        </h3>
         <p className="text-slate-500 max-w-sm mx-auto mb-6">
-          Connect with other users to start exchanging skills and sharing knowledge
+          Connect with other users to start exchanging skills and sharing
+          knowledge
         </p>
         <Button
           variant="default"
@@ -222,7 +243,7 @@ export default function ConversationList({ userId }: { userId: string }) {
           />
         </div>
       </div>
-      
+
       <div className="overflow-y-auto flex-1">
         {filteredConversations.length === 0 ? (
           <div className="text-center py-10">
@@ -231,10 +252,11 @@ export default function ConversationList({ userId }: { userId: string }) {
         ) : (
           <div className="divide-y">
             {filteredConversations.map((conversation) => {
-              const isActive = pathname === `/messages/${conversation.connection_id}`;
-              
+              const isActive =
+                pathname === `/messages/${conversation.connection_id}`;
+
               // Safely format date with validation
-              let timeAgo = '';
+              let timeAgo = "";
               try {
                 if (conversation.last_message_time) {
                   const date = new Date(conversation.last_message_time);
@@ -242,22 +264,24 @@ export default function ConversationList({ userId }: { userId: string }) {
                   if (!isNaN(date.getTime())) {
                     timeAgo = formatDistanceToNow(date, { addSuffix: true });
                   } else {
-                    timeAgo = 'Recently';
+                    timeAgo = "Recently";
                   }
                 } else {
-                  timeAgo = 'Recently';
+                  timeAgo = "Recently";
                 }
               } catch (error) {
-                console.error('Date formatting error:', error);
-                timeAgo = 'Recently';
+                console.error("Date formatting error:", error);
+                timeAgo = "Recently";
               }
-              
+
               return (
-                <Link 
+                <Link
                   key={conversation.connection_id}
                   href={`/messages/${conversation.connection_id}`}
                   className={`flex items-center p-4 hover:bg-slate-50 transition-colors cursor-pointer ${
-                    isActive ? 'bg-indigo-50 hover:bg-indigo-50 border-l-4 border-l-indigo-500' : ''
+                    isActive
+                      ? "bg-indigo-50 hover:bg-indigo-50 border-l-4 border-l-indigo-500"
+                      : ""
                   }`}
                 >
                   <div className="relative">
@@ -286,7 +310,13 @@ export default function ConversationList({ userId }: { userId: string }) {
                         {timeAgo}
                       </span>
                     </div>
-                    <p className={`text-sm truncate ${conversation.unread_count > 0 ? 'font-medium text-slate-800' : 'text-slate-500'}`}>
+                    <p
+                      className={`text-sm truncate ${
+                        conversation.unread_count > 0
+                          ? "font-medium text-slate-800"
+                          : "text-slate-500"
+                      }`}
+                    >
                       {conversation.last_message}
                     </p>
                   </div>

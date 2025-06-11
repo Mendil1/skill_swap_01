@@ -7,6 +7,10 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { FallbackImage } from "@/components/ui/fallback-image";
 import MobileNav from "@/components/mobile-nav";
+import MemoizedNotificationBell from "@/components/memoized-notification-bell";
+import NetworkMonitorWrapper from "@/components/network-monitor-wrapper";
+import { CommonResourceHints, PerformanceBudgetMonitor } from "@/components/resource-hints";
+import { IntelligentPrefetch } from "@/components/intelligent-prefetch";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -35,8 +39,9 @@ export default async function RootLayout({
 
   // Add authenticated-only links
   const authLinks = user ? [
-    { href: "/users", label: "Find Users" },
+    { href: "/sessions", label: "Sessions" },
     { href: "/messages", label: "Messages" },
+    { href: "/credits", label: "Credits" }
   ] : [];
 
   // All links combined
@@ -44,7 +49,12 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className="scroll-smooth">
+      <head>
+        <CommonResourceHints />
+      </head>
       <body className={`${inter.className} min-h-screen flex flex-col`}>
+        <PerformanceBudgetMonitor />
+        <IntelligentPrefetch />
         <header className="border-b border-slate-200 sticky top-0 z-50 bg-white/95 backdrop-blur-sm">
           <div className="container mx-auto px-4 py-3 flex justify-between items-center">
             <Link
@@ -81,6 +91,9 @@ export default async function RootLayout({
             <div className="flex items-center gap-3">
               {user ? (
                 <>
+                  {/* Notification Bell */}
+                  <MemoizedNotificationBell />
+
                   <Link
                     href="/profile"
                     className="flex items-center gap-2 text-sm text-slate-700 hover:text-indigo-600 transition-colors"
@@ -111,13 +124,10 @@ export default async function RootLayout({
                   </Button>
                 </Link>
               )}
-              
+
               {/* Mobile Navigation Trigger */}
               <div className="md:hidden">
-                <MobileNav 
-                  links={allNavLinks} 
-                  user={user} 
-                />
+                <MobileNav links={allNavLinks} user={user} />
               </div>
             </div>
           </div>
@@ -238,6 +248,9 @@ export default async function RootLayout({
         </footer>
 
         <Toaster position="top-right" richColors closeButton />
+
+        {/* Include network monitor for authenticated users using the client wrapper */}
+        <NetworkMonitorWrapper userId={user?.id} />
       </body>
     </html>
   );

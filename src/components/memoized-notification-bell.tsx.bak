@@ -1,0 +1,11 @@
+"use client";
+
+import React from 'react';
+import NotificationBell from './notifications/notification-bell';
+
+// Create a memoized version of the NotificationBell component
+// This prevents unnecessary re-renders when parent components change
+// Only re-renders when its props or state change
+const MemoizedNotificationBell = React.memo(NotificationBell);
+
+export default MemoizedNotificationBell;

@@ -1,0 +1,493 @@
+# Sprint 2 - Core Functionality
+
+## Introduction
+
+Sprint 2, titled "Core Functionality," builds upon the foundation established in Sprint 1 to implement essential interaction features between users. This sprint focuses on enabling skill discovery, user profile visibility, and connection establishment, which are critical to the platform's core value proposition of skill exchange. The primary objectives are to create a robust search system for finding users and skills, implement detailed profile viewing functionality, and develop a connection request system that allows users to initiate skill exchanges. These features collectively enable the fundamental social interactions required for the SkillSwap ecosystem to function effectively.
+
+## 3.2 Development of Sprint 2: Core Functionality
+
+### 3.2.1 Sprint 2 Backlog
+
+The following user stories were selected for Sprint 2:
+
+1. **Search for skills/users (8 points)**
+   - As a user, I want to search for specific skills so that I can find people who can teach me those skills.
+   - As a user, I want to search for people who want to learn skills I can teach so that I can find potential skill exchange partners.
+   - As a user, I want to filter search results by skill categories to narrow down my search.
+   - As a user, I want to see relevant user matches based on complementary skills (they offer what I want, or they want what I offer).
+   - As a user, I want search results to be paginated so that I can browse through many results efficiently.
+
+2. **View profiles (5 points)**
+   - As a user, I want to view other users' profiles to learn about their background and skills.
+   - As a user, I want to see what skills a user offers to teach to determine if they match my learning interests.
+   - As a user, I want to see what skills a user wants to learn to determine if I can teach them something.
+   - As a user, I want to see a user's availability information to help plan potential skill exchanges.
+   - As a user, I want to view profile images to better recognize and connect with potential skill exchange partners.
+
+3. **Send/receive connection requests (8 points)**
+   - As a user, I want to send connection requests to users I'm interested in exchanging skills with.
+   - As a user, I want to receive notifications when someone sends me a connection request.
+   - As a user, I want to accept or reject connection requests to control who I connect with.
+   - As a user, I want to see the status of my sent connection requests (pending, accepted, rejected).
+   - As a user, I want to see a list of my established connections for easy access to my network.
+
+Total story points: 21
+
+### 3.2.2 Analysis
+
+#### 3.2.2.1 Use Case Diagram
+
+```
++-------------------------------------------+
+|                 SkillSwap                 |
++-------------------------------------------+
+                     ^
+                     |
+      +--------------+---------------+
+      |                              |
++-----+------+                 +-----+------+
+|            |                 |            |
+|    User    |                 |   System   |
+|            |                 |            |
++------------+                 +------------+
+      |                              |
+      |                              |
++-----+------+                 +-----+------+
+| Search for |                 | Process    |
+| Users/     |                 | Search     |
+| Skills     |---------------->| Query      |
++------------+                 +------------+
+      |                              |
+      v                              v
++------------+                 +------------+
+| View       |                 | Fetch      |
+| User       |<--------------->| Profile    |
+| Profile    |                 | Data       |
++------------+                 +------------+
+      |                              |
+      v                              v
++------------+                 +------------+
+| Send/      |                 | Process    |
+| Receive    |<--------------->| Connection |
+| Connection |                 | Request    |
+| Requests   |                 |            |
++------------+                 +------------+
+      |                              |
+      v                              v
++------------+                 +------------+
+| Manage     |                 | Update     |
+| Connection |<--------------->| Connection |
+| Status     |                 | Status     |
++------------+                 +------------+
+```
+
+This use case diagram illustrates the core interactions in Sprint 2. There are two primary actors:
+- User: An authenticated person who can search for others, view profiles, and manage connections
+- System: Processes search queries, provides profile data, and handles connection requests
+
+The main use cases are:
+- Search for Users/Skills: Users finding potential skill exchange partners
+- View User Profile: Examining detailed information about other users
+- Send/Receive Connection Requests: Initiating and responding to connection attempts
+- Manage Connection Status: Tracking and updating the status of connections
+
+#### 3.2.2.2 Use Case Description: Search for Users/Skills
+
+**Name:** Search for Users/Skills  
+**Actor:** User  
+**Description:** This use case describes the process of a user searching for other users based on skills offered or requested.
+
+**Preconditions:**
+- User is authenticated and logged in to the system
+- User has access to the search functionality
+
+**Main Flow:**
+1. User navigates to the search page
+2. User enters search criteria (skill name, category, skill type - offered/requested)
+3. User submits the search query
+4. System processes the search parameters
+5. System retrieves matching users based on skill relevance
+6. System presents the search results in a paginated format
+7. User browses through search results
+8. User can select a user from results to view their detailed profile
+
+**Alternative Flows:**
+- If no search results are found, system displays an appropriate message
+- User can refine search criteria and submit a new search
+- User can navigate between pages of search results
+- User can filter results by additional parameters (skill categories, etc.)
+
+**Postconditions:**
+- User is presented with a list of users matching their search criteria
+- User can proceed to view profiles or send connection requests to users in the results
+
+#### 3.2.2.3 Use Case Description: View User Profile
+
+**Name:** View User Profile  
+**Actor:** User  
+**Description:** This use case describes the process of a user viewing another user's detailed profile information.
+
+**Preconditions:**
+- User is authenticated and logged in to the system
+- The target profile exists in the system
+
+**Main Flow:**
+1. User selects another user's profile to view (from search results or elsewhere)
+2. System retrieves the profile information for the selected user
+3. System retrieves the skills offered by the selected user
+4. System retrieves the skills requested by the selected user
+5. System presents the complete profile information, including personal details, bio, availability, and skills
+6. User reviews the profile information
+7. User can decide to send a connection request or return to previous activity
+
+**Alternative Flows:**
+- If the profile does not exist, system displays an error message
+- If the user has already sent a connection request, system shows the current status
+- If the users are already connected, system displays the connection status
+
+**Postconditions:**
+- User has viewed the detailed profile information of another user
+- User can make informed decisions about potential skill exchanges
+
+#### 3.2.2.4 Use Case Description: Send/Receive Connection Requests
+
+**Name:** Send/Receive Connection Requests  
+**Actor:** User  
+**Description:** This use case describes the process of users initiating, receiving, and responding to connection requests.
+
+**Preconditions:**
+- Both users are authenticated and have accounts on the system
+- The users are not already connected
+
+**Main Flow (Sending):**
+1. User navigates to another user's profile
+2. User reviews profile information and skills
+3. User decides to connect and clicks the "Connect" button
+4. System validates the request (no existing connection or pending request)
+5. System creates a new connection request with "pending" status
+6. System notifies the receiving user of the new request
+7. System displays confirmation to the sending user
+
+**Main Flow (Receiving):**
+1. User receives notification of a new connection request
+2. User reviews the requesting user's profile
+3. User decides to accept or reject the request
+4. User responds with their decision
+5. System updates the connection status accordingly
+6. System notifies the original requester of the decision
+
+**Alternative Flows:**
+- If users are already connected, system shows existing connection status
+- If there's already a pending request, system shows appropriate message
+- If user rejects a request, system updates status and notifies requester
+- If system encounters an error, appropriate error messages are displayed
+
+**Postconditions:**
+- A new connection is established (if accepted) or the request is declined
+- Both users are notified of the outcome
+- Connected users can now proceed to further interactions (messaging, etc.)
+
+### 3.2.3 Design
+
+#### 3.2.3.1 Sequence Diagrams
+
+**Search for Users/Skills Sequence**
+
+```
+User                    SearchController                SkillRepository               UserRepository
+  |                            |                              |                            |
+  |---1. Navigate to Search--->|                              |                            |
+  |<--2. Return Search Page----|                              |                            |
+  |                            |                              |                            |
+  |---3. Submit Search Query-->|                              |                            |
+  |                            |---4. Get Skill Categories--->|                            |
+  |                            |<--5. Return Categories-------|                            |
+  |                            |                              |                            |
+  |                            |---6. Query Matching Skills-->|                            |
+  |                            |<--7. Return Matching Skills--|                            |
+  |                            |                              |                            |
+  |                            |---8. Find Users with Skills------------------>|           |
+  |                            |<--9. Return Matching Users-------------------|           |
+  |                            |                              |                            |
+  |                            |---10. Prepare Paginated Results                           |
+  |                            |                              |                            |
+  |<--11. Display Results------|                              |                            |
+  |                            |                              |                            |
+  |---12. Select Page Number-->|                              |                            |
+  |                            |---13. Get Requested Page---->|                            |
+  |<--14. Return Updated List--|                              |                            |
+  |                            |                              |                            |
+```
+
+**View Profile Sequence**
+
+```
+User                   ProfileController              UserRepository              SkillRepository              ConnectionRepository
+  |                           |                             |                            |                             |
+  |---1. Request Profile----->|                             |                            |                             |
+  |                           |---2. Get User Data--------->|                            |                             |
+  |                           |<--3. Return User Data-------|                            |                             |
+  |                           |                             |                            |                             |
+  |                           |---4. Get User Skills------------------------->|           |                             |
+  |                           |<--5. Return Skills----------------------------|           |                             |
+  |                           |                             |                            |                             |
+  |                           |---6. Check Connection Status-------------------------------->|                          |
+  |                           |<--7. Return Connection Status------------------------------|                          |
+  |                           |                             |                            |                             |
+  |                           |---8. Compile Profile View---|                            |                             |
+  |                           |                             |                            |                             |
+  |<--9. Display Profile------|                             |                            |                             |
+  |                           |                             |                            |                             |
+```
+
+**Connection Request Sequence**
+
+```
+User                ConnectionController         ConnectionRepository          NotificationService
+  |                         |                            |                            |
+  |---1. Send Request------>|                            |                            |
+  |                         |---2. Validate Request----->|                            |
+  |                         |<--3. Validation Result-----|                            |
+  |                         |                            |                            |
+  |                         |---4. Create Connection---->|                            |
+  |                         |<--5. Connection Created----|                            |
+  |                         |                            |                            |
+  |                         |---6. Create Notification------------------------->|     |
+  |                         |<--7. Notification Created------------------------|     |
+  |                         |                            |                            |
+  |<--8. Request Confirmed--|                            |                            |
+  |                         |                            |                            |
+  |                         |                            |                            |
+  |---9. Accept Request---->|                            |                            |
+  |                         |---10. Update Status------->|                            |
+  |                         |<--11. Status Updated-------|                            |
+  |                         |                            |                            |
+  |                         |---12. Notify Requester-------------------------->|     |
+  |                         |<--13. Notification Sent----------------------------|   |
+  |                         |                            |                            |
+  |<--14. Acceptance Confirmed                           |                            |
+  |                         |                            |                            |
+```
+
+#### 3.2.3.2 Class Diagrams
+
+```
++---------------------+       +----------------------+       +---------------------+
+|        User         |       |      Connection      |       |      Notification   |
++---------------------+       +----------------------+       +---------------------+
+| - user_id: UUID     |       | - connection_id: UUID|       | - notification_id   |
+| - email: String     |       | - sender_id: UUID    |<----->| - user_id: UUID     |
+| - hashed_password   |<----->| - receiver_id: UUID  |       | - type: String      |
+| - full_name         |       | - status: String     |       | - message: Text     |
+| - bio               |       | - created_at         |       | - is_read: Boolean  |
+| - availability      |       +----------------------+       | - reference_id: UUID|
+| - profile_image     |                                      | - created_at        |
+| - created_at        |                                      +---------------------+
+| - updated_at        |
++---------------------+
+        ^
+        |
+        |
++---------------------+       +---------------------+       +---------------------+
+|      UserSkill      |       |        Skill        |       |     SearchService   |
++---------------------+       +---------------------+       +---------------------+
+| - user_skill_id     |       | - skill_id: UUID    |       | + searchBySkill()   |
+| - user_id: UUID     |<----->| - name: String      |<------| + searchByCategory()|
+| - skill_id: UUID    |       | - description       |       | + paginateResults() |
+| - type: String      |       | - category          |       +---------------------+
+| - created_at        |       | - created_at        |
++---------------------+       | - updated_at        |
+                              +---------------------+
+```
+
+This class diagram shows the domain entities and their relationships for Sprint 2:
+- User: User profile information
+- Skill: Available skills in the system
+- UserSkill: Junction between users and skills (offered/requested)
+- Connection: Represents relationship between two users
+- Notification: System messages for users about events like connection requests
+- SearchService: Service for finding users and skills
+
+The diagram highlights the new Connection and Notification entities added in Sprint 2 to support the connection request functionality.
+
+#### 3.2.3.3 Relational Schema and Data Dictionary
+
+**Connection_Requests Table**
+```
+connection_requests (
+    connection_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    sender_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    receiver_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE(sender_id, receiver_id)
+)
+```
+
+**Notifications Table**
+```
+notifications (
+    notification_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+    is_read BOOLEAN NOT NULL DEFAULT false,
+    reference_id UUID,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+```
+
+**Data Dictionary**
+
+| Table | Column | Type | Description |
+|-------|--------|------|-------------|
+| connection_requests | connection_id | UUID | Primary key, unique identifier for each connection |
+| connection_requests | sender_id | UUID | Foreign key reference to the user who initiated the connection |
+| connection_requests | receiver_id | UUID | Foreign key reference to the user who received the request |
+| connection_requests | status | VARCHAR(20) | Status of the connection ('pending', 'accepted', 'rejected') |
+| connection_requests | created_at | TIMESTAMPTZ | Timestamp when the connection request was created |
+| notifications | notification_id | UUID | Primary key, unique identifier for each notification |
+| notifications | user_id | UUID | Foreign key reference to the user receiving the notification |
+| notifications | type | VARCHAR(50) | Type of notification (e.g., 'connection_request', 'request_accepted') |
+| notifications | message | TEXT | Human-readable notification message |
+| notifications | is_read | BOOLEAN | Flag indicating whether the notification has been read |
+| notifications | reference_id | UUID | Optional reference to related entity (e.g., connection_id) |
+| notifications | created_at | TIMESTAMPTZ | Timestamp when the notification was created |
+
+### 3.2.4 Implementation
+
+#### 3.2.4.1 Logical Architecture (Component Diagram)
+
+```
++--------------------------------------+
+|             Client Layer             |
+|                                      |
+|  +-------------+ +----------------+  |
+|  | Search UI   | | Profile View   |  |
+|  +-------------+ +----------------+  |
+|  +-------------+ +----------------+  |
+|  | Connection  | | Notification   |  |
+|  | UI          | | UI             |  |
+|  +-------------+ +----------------+  |
++--------------------------------------+
+                 |
+                 v
++--------------------------------------+
+|          Application Layer           |
+|                                      |
+|  +-------------+ +----------------+  |
+|  | Search      | | Profile        |  |
+|  | Controller  | | Controller     |  |
+|  +-------------+ +----------------+  |
+|  +-------------+ +----------------+  |
+|  | Connection  | | Notification   |  |
+|  | Controller  | | Controller     |  |
+|  +-------------+ +----------------+  |
++--------------------------------------+
+                 |
+                 v
++--------------------------------------+
+|             Data Layer               |
+|                                      |
+|  +-------------+ +----------------+  |
+|  | User        | | Skill          |  |
+|  | Repository  | | Repository     |  |
+|  +-------------+ +----------------+  |
+|  +-------------+ +----------------+  |
+|  | Connection  | | Notification   |  |
+|  | Repository  | | Repository     |  |
+|  +-------------+ +----------------+  |
+|                                      |
+|  +--------------------------------+  |
+|  |           Database             |  |
+|  |    (PostgreSQL via Supabase)   |  |
+|  +--------------------------------+  |
++--------------------------------------+
+                 |
+                 v
++--------------------------------------+
+|          External Services           |
+|                                      |
+|  +-------------+ +----------------+  |
+|  | Supabase    | | Supabase       |  |
+|  | Auth        | | Realtime       |  |
+|  +-------------+ +----------------+  |
++--------------------------------------+
+```
+
+Building on the architecture established in Sprint 1, Sprint 2 introduces new components:
+
+1. **Client Layer**: Extends with new UI components
+   - Search UI: Interface for finding users and skills
+   - Profile View: Detailed user profile display
+   - Connection UI: Interface for managing connection requests
+   - Notification UI: For displaying connection request notifications
+
+2. **Application Layer**: New controllers for additional features
+   - Search Controller: Handles search queries and results
+   - Profile Controller: Manages detailed profile viewing
+   - Connection Controller: Manages connection request workflows
+   - Notification Controller: Handles notification generation and delivery
+
+3. **Data Layer**: Additional repositories for new entities
+   - Connection Repository: Data access for connection requests
+   - Notification Repository: Data access for user notifications
+
+4. **External Services**: Enhanced use of Supabase features
+   - Supabase Realtime: For real-time notifications of connection requests
+
+The architecture maintains the separation of concerns established in Sprint 1 while extending functionality to support the new features. The integration of Supabase Realtime enables immediate notification delivery for connection requests.
+
+#### 3.2.4.2 Interface Descriptions
+
+**User Interfaces**
+
+1. **Search Interface**
+   - Components: Search form, filter controls, results list, pagination controls
+   - Inputs: Search query, skill category filters, skill type filters (offer/request)
+   - Outputs: Paginated list of matching users with skill previews
+   - Actions: Submit search, apply filters, clear filters, navigate pages, view profile
+
+2. **Profile View**
+   - Components: User details card, skills lists (offered/requested), availability display, profile image
+   - Sections: Personal information, bio, skills offered, skills requested, availability
+   - Actions: Send connection request, return to search results
+
+3. **Connection Management**
+   - Components: Connection request button, connection status indicator, connection list
+   - States: Not connected, pending (sent), pending (received), connected, rejected
+   - Actions: Send request, accept request, reject request, view connections
+
+4. **Notification Interface**
+   - Components: Notification bell, notification count, notification list
+   - Notification Types: Connection request, request accepted
+   - Actions: View notifications, mark as read, navigate to connection
+
+**API Endpoints**
+
+1. **Search**
+   - `GET /api/search` - Search for users with query parameters
+     - Parameters: `q` (query), `category`, `type` (offer/request), `page`, `limit`
+   - `GET /api/skills/categories` - Get all skill categories for filtering
+
+2. **Profile Viewing**
+   - `GET /api/users/:id` - Get detailed profile for a specific user
+   - `GET /api/users/:id/skills` - Get skills for a specific user
+     - Parameters: `type` (offer/request/both)
+
+3. **Connection Management**
+   - `POST /api/connections` - Send a connection request
+     - Body: `receiver_id`
+   - `GET /api/connections` - Get all connections for current user
+     - Parameters: `status` (pending/accepted/rejected)
+   - `PUT /api/connections/:id` - Update connection status
+     - Body: `status` (accepted/rejected)
+   - `GET /api/connections/status/:userId` - Check connection status with a specific user
+
+4. **Notifications**
+   - `GET /api/notifications` - Get notifications for current user
+     - Parameters: `read` (true/false), `page`, `limit`
+   - `PUT /api/notifications/:id` - Mark notification as read
+   - `GET /api/notifications/count` - Get count of unread notifications
+
+These interfaces enable the core functionality for Sprint 2, building upon the foundation established in Sprint 1. Users can now search for potential skill exchange partners, view detailed profiles, and initiate connections, completing the essential interaction flow required for the SkillSwap platform's core value proposition.

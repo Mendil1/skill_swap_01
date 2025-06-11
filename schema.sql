@@ -149,3 +149,9 @@ CREATE TABLE reports (
     details TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Add reference_id column to notifications table
+ALTER TABLE notifications ADD COLUMN reference_id UUID;
+
+-- Add profile_image_url column to users table
+ALTER TABLE users ADD COLUMN profile_image_url TEXT;

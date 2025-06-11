@@ -1,0 +1,55 @@
+"use client";
+
+import { useEffect, useState } from 'react';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { Progress } from "@/components/ui/progress";
+
+export function NavigationProgress() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    // Reset the state when navigation completes
+    setProgress(100);
+
+    // Clean up progress after transition completes
+    const timer = setTimeout(() => {
+      setProgress(0);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [pathname, searchParams]);
+
+  // Listen for navigation start
+  useEffect(() => {
+    const handleNavigationStart = () => {
+      setProgress(20);
+
+      // Simulate progress
+      const timer1 = setTimeout(() => setProgress(60), 100);
+      const timer2 = setTimeout(() => setProgress(80), 300);
+
+      return () => {
+        clearTimeout(timer1);
+        clearTimeout(timer2);
+      };
+    };
+
+    // Add event listeners for router events (can be customized based on your router)
+    document.addEventListener('navigationStart', handleNavigationStart);
+
+    return () => {
+      document.removeEventListener('navigationStart', handleNavigationStart);
+    };
+  }, []);
+
+  if (progress === 0) return null;
+
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50">
+      <Progress value={progress} className="h-1 bg-transparent w-full"
+        indicatorClassName="bg-indigo-600 transition-all duration-300 ease-in-out" />
+    </div>
+  );
+}

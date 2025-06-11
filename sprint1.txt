@@ -1,0 +1,458 @@
+# Sprint 1 - Foundations
+
+## Introduction
+
+Sprint 1, titled "Foundations," focuses on establishing the core functionality of the SkillSwap platform. This sprint aims to implement the essential features needed for users to register, authenticate, create profiles, and manage their skills. These foundational elements will serve as the building blocks for all future functionality of the peer-to-peer skill exchange platform. The primary objective is to create a functional user onboarding flow and basic profile management system that will enable users to establish their presence on the platform.
+
+## 3.1 Development of Sprint 1: Foundations
+
+### 3.1.1 Sprint 1 Backlog
+
+The following user stories were selected for Sprint 1:
+
+1. **Register and log in (5 points)**
+   - As a new user, I want to create an account so that I can access the platform.
+   - As a returning user, I want to log in to my account so that I can access my profile.
+   - As a user, I want to log out of my account to ensure my session is secure when I'm not using the platform.
+   - As a user who forgot my password, I want to reset it so that I can regain access to my account.
+
+2. **Create and update profile (3 points)**
+   - As a new user, I want to create a profile with my personal information so that others can learn about me.
+   - As a user, I want to update my profile information to keep it current.
+   - As a user, I want to upload a profile picture to personalize my profile.
+   - As a user, I want to add a bio and availability information to my profile so that potential skill-exchange partners know when I'm available.
+
+3. **Add offered/requested skills (5 points)**
+   - As a user, I want to add skills I can teach to my profile so that others can find me for skill exchanges.
+   - As a user, I want to add skills I want to learn to my profile so that I can find appropriate teachers.
+   - As a user, I want to categorize my skills to make them easier to discover.
+   - As a user, I want to remove skills from my profile when they are no longer relevant.
+
+Total story points: 13
+
+### 3.1.2 Analysis
+
+#### 3.1.2.1 Use Case Diagram
+
+```
++----------------------------------+
+|                                  |
+|            SkillSwap            |
+|                                  |
++----------------------------------+
+                 ^
+                 |
+                 |
+     +-----------+-----------+
+     |           |           |
+     |           |           |
++----+----+  +---+----+  +---+-----+
+|         |  |        |  |         |
+|  Guest  |  |  User  |  |  System |
+|         |  |        |  |         |
++---------+  +--------+  +---------+
+     |           |           |
+     |           |           |
++----+----+  +---+----+  +---+-----+
+| Register |  | Login  |  | Process |
+|          |  |        |  | Auth    |
++----------+  +--------+  +---------+
+                 |
+         +-------+-------+
+         |       |       |
+    +----+----+  |  +----+----+
+    | Manage  |  |  | Manage  |
+    | Profile |  |  | Skills  |
+    +---------+  |  +---------+
+                 |
+            +----+----+
+            | Logout  |
+            +---------+
+```
+
+This use case diagram illustrates the core interactions in Sprint 1. There are three primary actors:
+- Guest: A non-authenticated visitor who can register
+- User: An authenticated person who can manage their profile and skills
+- System: Handles authentication processes
+
+The main use cases are:
+- Register: New users creating accounts
+- Login/Logout: Authentication management
+- Manage Profile: Create and update user profiles
+- Manage Skills: Add, categorize, and remove skills (both offered and requested)
+
+#### 3.1.2.2 Use Case Description: User Registration
+
+**Name:** User Registration  
+**Actor:** Guest  
+**Description:** This use case describes the process of a new user registering on the SkillSwap platform.
+
+**Preconditions:**
+- The guest has access to the SkillSwap platform
+- The guest does not already have an account
+
+**Main Flow:**
+1. Guest navigates to the registration page
+2. Guest enters required information: email address, password, and full name
+3. System validates the input data
+4. System checks if the email is already registered
+5. If not already registered, system creates a new user account
+6. System sends a confirmation email to the provided address
+7. System redirects user to login page with a success message
+
+**Alternative Flows:**
+- If email is already registered, system displays an error message
+- If password doesn't meet minimum requirements, system displays validation error
+- If any required field is missing, system highlights the missing fields
+
+**Postconditions:**
+- A new user account is created in the system
+- User can now log in with their credentials
+
+#### 3.1.2.3 Use Case Description: Profile Management
+
+**Name:** Profile Management  
+**Actor:** User  
+**Description:** This use case describes the process of a user creating and updating their profile information.
+
+**Preconditions:**
+- User is authenticated and logged in to the system
+
+**Main Flow:**
+1. User navigates to the profile management page
+2. System displays current profile information (if any)
+3. User enters or updates profile information (bio, availability)
+4. User uploads or changes profile image (optional)
+5. User saves changes
+6. System validates and stores the updated information
+7. System displays success message
+
+**Alternative Flows:**
+- If validation fails, system displays appropriate error messages
+- If image upload fails, system notifies the user and maintains current image
+
+**Postconditions:**
+- User profile is created or updated in the system
+- Updated information is visible to the user and others on the platform
+
+#### 3.1.2.4 Use Case Description: Skill Management
+
+**Name:** Skill Management  
+**Actor:** User  
+**Description:** This use case describes the process of a user adding, categorizing, and removing skills on their profile.
+
+**Preconditions:**
+- User is authenticated and logged in to the system
+- User has accessed their profile management area
+
+**Main Flow:**
+1. User navigates to the skills management section
+2. System displays current skills (if any), separated into "offered" and "requested" categories
+3. User selects to add a new skill
+4. User enters skill name, selects category, and designates it as "offered" or "requested"
+5. System validates and saves the skill information
+6. Updated skill list is displayed to the user
+
+**Alternative Flows:**
+- If user wants to remove a skill, they select the skill and confirm deletion
+- If user wants to recategorize a skill, they can edit it and change its category or type
+- If validation fails, system displays appropriate error messages
+
+**Postconditions:**
+- User's skills are updated in the system
+- Skills are properly categorized as either offered or requested
+- Updated skills are visible on the user's profile
+
+### 3.1.3 Design
+
+#### 3.1.3.1 Sequence Diagrams
+
+**User Registration Sequence**
+
+```
+Guest                       AuthController                 UserRepository                EmailService
+  |                               |                               |                           |
+  |----1. Registration Request--->|                               |                           |
+  |                               |                               |                           |
+  |                               |---2. Validate Input---------->|                           |
+  |                               |                               |                           |
+  |                               |---3. Check Existing Email---->|                           |
+  |                               |<--4. Email Availability-------|                           |
+  |                               |                               |                           |
+  |                               |---5. Create User------------->|                           |
+  |                               |<--6. User Created-------------|                           |
+  |                               |                               |                           |
+  |                               |---7. Send Confirmation Email----------------------->|     |
+  |                               |<--8. Email Sent--------------------------------------|     |
+  |                               |                               |                           |
+  |<---9. Registration Success----|                               |                           |
+  |                               |                               |                           |
+```
+
+**Profile Management Sequence**
+
+```
+User                      ProfileController                ProfileRepository           StorageService
+  |                               |                               |                         |
+  |---1. Request Profile Page---->|                               |                         |
+  |                               |---2. Get Current Profile----->|                         |
+  |                               |<--3. Return Profile Data------|                         |
+  |<--4. Display Profile Page-----|                               |                         |
+  |                               |                               |                         |
+  |---5. Submit Profile Updates-->|                               |                         |
+  |                               |                               |                         |
+  |                               |---6. Upload Profile Image---------------------------->|  |
+  |                               |<--7. Return Image URL--------------------------------|  |
+  |                               |                               |                         |
+  |                               |---8. Save Profile Data------->|                         |
+  |                               |<--9. Confirm Update-----------|                         |
+  |                               |                               |                         |
+  |<--10. Profile Update Success--|                               |                         |
+  |                               |                               |                         |
+```
+
+**Skill Management Sequence**
+
+```
+User                      SkillController                 SkillRepository
+  |                               |                              |
+  |---1. Request Skills Page----->|                              |
+  |                               |---2. Get User Skills-------->|
+  |                               |<--3. Return Skills-----------|
+  |<--4. Display Skills Page------|                              |
+  |                               |                              |
+  |---5. Add New Skill----------->|                              |
+  |                               |---6. Validate Skill--------->|
+  |                               |<--7. Validation Result-------|
+  |                               |                              |
+  |                               |---8. Save Skill------------->|
+  |                               |<--9. Skill Saved-------------|
+  |                               |                              |
+  |<--10. Skill Addition Success--|                              |
+  |                               |                              |
+```
+
+#### 3.1.3.2 Class Diagrams
+
+```
++-------------------+       +-------------------+       +-------------------+
+|       User        |       |     UserSkill     |       |       Skill       |
++-------------------+       +-------------------+       +-------------------+
+| - user_id: UUID   |       | - user_skill_id   |       | - skill_id: UUID  |
+| - email: String   |       | - user_id: UUID   |<----->| - name: String    |
+| - hashed_password |       | - skill_id: UUID  |       | - description     |
+| - full_name       |<----->| - type: String    |       | - category        |
+| - bio             |       | - created_at      |       | - created_at      |
+| - availability    |       +-------------------+       | - updated_at      |
+| - profile_image   |                                   +-------------------+
+| - created_at      |
+| - updated_at      |
++-------------------+
+        ^
+        |
+        |
++-------------------+
+| AuthenticationSvc |
++-------------------+
+| + register()      |
+| + login()         |
+| + logout()        |
+| + resetPassword() |
++-------------------+
+```
+
+This class diagram shows the primary domain entities and their relationships:
+- User: Contains user account and profile information
+- Skill: Represents a skill in the system (master list)
+- UserSkill: Junction entity connecting users to skills, with a type field indicating whether the skill is offered or requested
+- AuthenticationService: Handles authentication operations
+
+#### 3.1.3.3 Relational Schema and Data Dictionary
+
+**Users Table**
+```
+users (
+    user_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    email VARCHAR(255) NOT NULL UNIQUE,
+    hashed_password VARCHAR(255) NOT NULL,
+    full_name VARCHAR(255) NOT NULL,
+    bio TEXT,
+    availability TEXT,
+    profile_image_url TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+```
+
+**Skills Table**
+```
+skills (
+    skill_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(255) NOT NULL UNIQUE,
+    description TEXT,
+    category VARCHAR(100),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+)
+```
+
+**User_Skills Table**
+```
+user_skills (
+    user_skill_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    skill_id UUID NOT NULL REFERENCES skills(skill_id) ON DELETE CASCADE,
+    type VARCHAR(10) NOT NULL CHECK (type IN ('offer', 'request', 'both')),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (user_id, skill_id, type)
+)
+```
+
+**Data Dictionary**
+
+| Table | Column | Type | Description |
+|-------|--------|------|-------------|
+| users | user_id | UUID | Primary key, unique identifier for each user |
+| users | email | VARCHAR(255) | User's email address, used for login, unique |
+| users | hashed_password | VARCHAR(255) | Bcrypt-hashed password for security |
+| users | full_name | VARCHAR(255) | User's full name |
+| users | bio | TEXT | User's biography or description (optional) |
+| users | availability | TEXT | User's availability for skill exchanges (optional) |
+| users | profile_image_url | TEXT | URL to user's profile image in storage (optional) |
+| users | created_at | TIMESTAMPTZ | Timestamp when user account was created |
+| users | updated_at | TIMESTAMPTZ | Timestamp when user account was last updated |
+| skills | skill_id | UUID | Primary key, unique identifier for each skill |
+| skills | name | VARCHAR(255) | Name of the skill, unique |
+| skills | description | TEXT | Description of the skill (optional) |
+| skills | category | VARCHAR(100) | Category of the skill (e.g., Technology, Arts, Languages) |
+| skills | created_at | TIMESTAMPTZ | Timestamp when skill was created |
+| skills | updated_at | TIMESTAMPTZ | Timestamp when skill was last updated |
+| user_skills | user_skill_id | UUID | Primary key, unique identifier for each user-skill association |
+| user_skills | user_id | UUID | Foreign key reference to users table |
+| user_skills | skill_id | UUID | Foreign key reference to skills table |
+| user_skills | type | VARCHAR(10) | Indicates if user offers or requests this skill ('offer', 'request', 'both') |
+| user_skills | created_at | TIMESTAMPTZ | Timestamp when the association was created |
+
+### 3.1.4 Implementation
+
+#### 3.1.4.1 Logical Architecture (Component Diagram)
+
+```
++-----------------------------------+
+|           Client Layer            |
+|                                   |
+|  +-------------+ +-------------+  |
+|  | Auth UI     | | Profile UI  |  |
+|  +-------------+ +-------------+  |
+|  +-------------+                  |
+|  | Skills UI   |                  |
+|  +-------------+                  |
++-----------------------------------+
+              |
+              v
++-----------------------------------+
+|          Application Layer        |
+|                                   |
+|  +-------------+ +-------------+  |
+|  | Auth        | | Profile     |  |
+|  | Controller  | | Controller  |  |
+|  +-------------+ +-------------+  |
+|  +-------------+                  |
+|  | Skills      |                  |
+|  | Controller  |                  |
+|  +-------------+                  |
++-----------------------------------+
+              |
+              v
++-----------------------------------+
+|            Data Layer             |
+|                                   |
+|  +-------------+ +-------------+  |
+|  | User        | | Skill       |  |
+|  | Repository  | | Repository  |  |
+|  +-------------+ +-------------+  |
+|                                   |
+|  +-----------------------------+  |
+|  |         Database            |  |
+|  | (PostgreSQL via Supabase)   |  |
+|  +-----------------------------+  |
++-----------------------------------+
+              |
+              v
++-----------------------------------+
+|          External Services        |
+|                                   |
+|  +-------------+ +-------------+  |
+|  | Supabase    | | Storage     |  |
+|  | Auth        | | Service     |  |
+|  +-------------+ +-------------+  |
++-----------------------------------+
+```
+
+The logical architecture follows a layered pattern:
+
+1. **Client Layer**: Contains the user interface components built with Next.js and React.
+   - Auth UI: Registration and login forms
+   - Profile UI: Profile management interface
+   - Skills UI: Interface for adding and managing skills
+
+2. **Application Layer**: Contains the controllers that handle business logic.
+   - Auth Controller: Handles authentication flows
+   - Profile Controller: Manages profile data
+   - Skills Controller: Manages skill operations
+
+3. **Data Layer**: Manages data access and persistence.
+   - User Repository: Data access for user information
+   - Skill Repository: Data access for skills
+   - Database: PostgreSQL database hosted on Supabase
+
+4. **External Services**: Third-party services integrated with the application.
+   - Supabase Auth: Authentication service
+   - Storage Service: For storing profile images
+
+This architecture promotes separation of concerns and modularity, making the system easier to maintain and extend in future sprints.
+
+#### 3.1.4.2 Interface Descriptions
+
+**User Interfaces**
+
+1. **Registration Form**
+   - Fields: Email, Password, Full Name
+   - Validation: Email format, password strength, required fields
+   - Actions: Submit, Cancel, Navigate to Login
+
+2. **Login Form**
+   - Fields: Email, Password
+   - Actions: Submit, Navigate to Registration, Password Reset
+
+3. **Profile Management**
+   - Sections: Personal Information, Biography, Availability
+   - Fields: Full Name, Bio, Availability, Profile Image Upload
+   - Actions: Save, Cancel
+
+4. **Skill Management**
+   - Tabs: Offered Skills, Requested Skills
+   - Fields: Skill Name, Category (dropdown), Description
+   - Actions: Add Skill, Remove Skill, Edit Skill
+
+**API Endpoints**
+
+1. **Authentication**
+   - `POST /api/auth/register` - Create a new user account
+   - `POST /api/auth/login` - Authenticate a user
+   - `POST /api/auth/logout` - End a user session
+   - `POST /api/auth/reset-password` - Initiate password reset
+
+2. **Profile Management**
+   - `GET /api/profile` - Retrieve current user profile
+   - `PUT /api/profile` - Update user profile
+   - `POST /api/profile/image` - Upload profile image
+
+3. **Skills Management**
+   - `GET /api/skills` - List all available skills
+   - `GET /api/skills/categories` - List all skill categories
+   - `GET /api/user/skills` - Get skills for current user
+   - `POST /api/user/skills` - Add a skill to user profile
+   - `DELETE /api/user/skills/:id` - Remove a skill from user profile
+
+These interfaces provide a comprehensive foundation for the core functionality implemented in Sprint 1, enabling users to register, manage their profiles, and specify their skills for future skill exchanges.

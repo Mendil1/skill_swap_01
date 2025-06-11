@@ -19,6 +19,7 @@ export interface Database {
           availability: string | null;
           created_at: string;
           updated_at: string;
+          profile_image_url: string | null;
         };
         Insert: {
           user_id?: string;
@@ -29,6 +30,7 @@ export interface Database {
           availability?: string | null;
           created_at?: string;
           updated_at?: string;
+          profile_image_url?: string | null;
         };
         Update: {
           user_id?: string;
@@ -39,6 +41,7 @@ export interface Database {
           availability?: string | null;
           created_at?: string;
           updated_at?: string;
+          profile_image_url?: string | null;
         };
       };
       skills: {
@@ -262,6 +265,7 @@ export interface Database {
           message: string;
           is_read: boolean;
           created_at: string;
+          reference_id: string | null;
         };
         Insert: {
           notification_id?: string;
@@ -270,6 +274,7 @@ export interface Database {
           message: string;
           is_read?: boolean;
           created_at?: string;
+          reference_id?: string | null;
         };
         Update: {
           notification_id?: string;
@@ -278,6 +283,7 @@ export interface Database {
           message?: string;
           is_read?: boolean;
           created_at?: string;
+          reference_id?: string | null;
         };
       };
       reports: {

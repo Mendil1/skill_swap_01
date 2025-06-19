@@ -14,32 +14,32 @@ export default async function SessionsPage() {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-8">
+      <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">My Sessions</h1>
-          <p className="text-slate-600 mt-2">
+          <p className="mt-2 text-slate-600">
             Manage your skill exchange sessions and schedule new ones
           </p>
         </div>
         <CreateSessionDialog>
           <Button className="bg-indigo-600 hover:bg-indigo-700">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="mr-2 h-4 w-4" />
             Schedule Session
           </Button>
         </CreateSessionDialog>
       </div>
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Upcoming Sessions</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Calendar className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {sessions.filter(s => new Date(s.scheduled_at) > new Date()).length +
-               groupSessions.filter(s => new Date(s.scheduled_at) > new Date()).length}
+              {sessions.filter((s) => new Date(s.scheduled_at) > new Date()).length +
+                groupSessions.filter((s) => new Date(s.scheduled_at) > new Date()).length}
             </div>
           </CardContent>
         </Card>
@@ -47,7 +47,7 @@ export default async function SessionsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">One-on-One Sessions</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{sessions.length}</div>
@@ -57,7 +57,7 @@ export default async function SessionsPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Group Sessions</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="text-muted-foreground h-4 w-4" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{groupSessions.length}</div>
@@ -72,44 +72,41 @@ export default async function SessionsPage() {
         </TabsList>
 
         <TabsContent value="list" className="space-y-6">
-          <Suspense fallback={
-            <div className="space-y-4">
-              {[...Array(3)].map((_, i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader>
-                    <div className="h-4 bg-slate-200 rounded w-1/4"></div>
-                    <div className="h-3 bg-slate-200 rounded w-1/2"></div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-3 bg-slate-200 rounded w-3/4"></div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          }>
-            <SessionsList
-              sessions={sessions}
-              groupSessions={groupSessions}
-              errors={errors}
-            />
+          <Suspense
+            fallback={
+              <div className="space-y-4">
+                {[...Array(3)].map((_, i) => (
+                  <Card key={i} className="animate-pulse">
+                    <CardHeader>
+                      <div className="h-4 w-1/4 rounded bg-slate-200"></div>
+                      <div className="h-3 w-1/2 rounded bg-slate-200"></div>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-3 w-3/4 rounded bg-slate-200"></div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            }
+          >
+            <SessionsList sessions={sessions} groupSessions={groupSessions} errors={errors} />
           </Suspense>
         </TabsContent>
 
         <TabsContent value="calendar" className="space-y-6">
-          <Suspense fallback={
-            <Card className="animate-pulse">
-              <CardHeader>
-                <div className="h-6 bg-slate-200 rounded w-1/3"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-96 bg-slate-200 rounded"></div>
-              </CardContent>
-            </Card>
-          }>
-            <SessionsCalendar
-              sessions={sessions}
-              groupSessions={groupSessions}
-            />
+          <Suspense
+            fallback={
+              <Card className="animate-pulse">
+                <CardHeader>
+                  <div className="h-6 w-1/3 rounded bg-slate-200"></div>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-96 rounded bg-slate-200"></div>
+                </CardContent>
+              </Card>
+            }
+          >
+            <SessionsCalendar sessions={sessions} groupSessions={groupSessions} />
           </Suspense>
         </TabsContent>
       </Tabs>

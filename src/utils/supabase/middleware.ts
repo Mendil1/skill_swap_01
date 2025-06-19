@@ -17,7 +17,8 @@ export async function updateSession(request: NextRequest) {
   // Hard-coded fallback values (only for development, not for production)
   const fallbackUrl = "https://sogwgxkxuuvvvjbqlcdo.supabase.co";
   // Using anonymous key for authentication operations in middleware
-  const fallbackAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvZ3dneGt4dXV2dnZqYnFsY2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTg1NDcsImV4cCI6MjA1OTk3NDU0N30.MGr4l7qK4Gj1tmVeSZhNmepQfVPfOh2OxgaXOgCigrs";
+  const fallbackAnonKey =
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNvZ3dneGt4dXV2dnZqYnFsY2RvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQzOTg1NDcsImV4cCI6MjA1OTk3NDU0N30.MGr4l7qK4Gj1tmVeSZhNmepQfVPfOh2OxgaXOgCigrs";
 
   // Use environment variables or fall back to hard-coded values
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || fallbackUrl;
@@ -28,43 +29,41 @@ export async function updateSession(request: NextRequest) {
   console.log("[Middleware] Supabase URL:", supabaseUrl ? "defined" : "undefined");
   console.log("[Middleware] Anonymous Key:", supabaseKey ? "defined" : "undefined");
 
-  const supabase = createServerClient<Database>(
-    supabaseUrl,
-    supabaseKey,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value;
-        },
-        set(name: string, value: string, options: CookieOptions) {
-          // In middleware, we can safely set cookies with each response
-          response.cookies.set({
-            name,
-            value,
-            // Apply consistent security defaults across the application
-            ...options,
-            httpOnly: true,
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
-            path: "/",
-          });
-        },
-        remove(name: string, options: CookieOptions) {
-          // Removing cookies by setting an expired date
-          response.cookies.set({
-            name,
-            value: "",
-            ...options,
-            expires: new Date(0),
-            httpOnly: true,
-            sameSite: "lax",
-            secure: process.env.NODE_ENV === "production",
-            path: "/",
-          });
-        },
+  const supabase = createServerClient<Database>(supabaseUrl, supabaseKey, {
+    cookies: {
+      get(name: string) {
+        return request.cookies.get(name)?.value;
       },
-    }
-  );
+      set(name: string, value: string, options: CookieOptions) {
+        // In middleware, we can safely set cookies with each response
+        // IMPORTANT: Don't use httpOnly for Supabase auth cookies as they need client access
+
+        response.cookies.set({
+          name,
+          value,
+          // Apply consistent security defaults across the application
+          ...options,
+          httpOnly: false, // Critical: Auth cookies need client-side access
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+        });
+      },
+      remove(name: string, options: CookieOptions) {
+        // Removing cookies by setting an expired date
+        response.cookies.set({
+          name,
+          value: "",
+          ...options,
+          expires: new Date(0),
+          httpOnly: false, // Consistent with set behavior
+          sameSite: "lax",
+          secure: process.env.NODE_ENV === "production",
+          path: "/",
+        });
+      },
+    },
+  });
 
   // This will update the auth cookies if needed
   await supabase.auth.getUser();

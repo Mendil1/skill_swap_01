@@ -13,17 +13,30 @@ export async function login(formData: FormData) {
     password: formData.get("password") as string,
   };
 
-  const { error } = await supabase.auth.signInWithPassword(data);
+  console.log("[Login Action] Attempting login for:", data.email);
+
+  const { data: authData, error } = await supabase.auth.signInWithPassword(data);
 
   if (error) {
+    console.error("[Login Action] Login failed:", error.message);
     return redirect(
-      `/login?message=${encodeURIComponent(
-        error.message || "Could not authenticate user"
-      )}`
+      `/login?message=${encodeURIComponent(error.message || "Could not authenticate user")}`
     );
   }
+  console.log("[Login Action] Login successful for user:", authData?.user?.email);
 
+  // Verify user authentication with server
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError) {
+    console.error("[Login Action] User verification failed:", userError);
+    return redirect(`/login?message=${encodeURIComponent("Authentication verification failed")}`);
+  } else {
+    console.log("[Login Action] User verified:", userData?.user?.email);
+  }
+  // Clear any Next.js cache to ensure fresh data
   revalidatePath("/", "layout");
+
+  // Redirect directly to home - the AuthProvider will handle session sync
   return redirect("/");
 }
 
@@ -38,9 +51,7 @@ export async function signup(formData: FormData) {
 
   // Get origin for redirect URL - works in both development and production
   const origin =
-    process.env.NEXT_PUBLIC_SITE_URL ||
-    process.env.VERCEL_URL ||
-    "http://localhost:3000";
+    process.env.NEXT_PUBLIC_SITE_URL || process.env.VERCEL_URL || "http://localhost:3000";
 
   const { error } = await supabase.auth.signUp({
     email: data.email,
@@ -57,9 +68,7 @@ export async function signup(formData: FormData) {
   if (error) {
     // Show specific error message rather than generic message
     return redirect(
-      `/login?message=${encodeURIComponent(
-        error.message || "Could not authenticate user"
-      )}`
+      `/login?message=${encodeURIComponent(error.message || "Could not authenticate user")}`
     );
   }
 

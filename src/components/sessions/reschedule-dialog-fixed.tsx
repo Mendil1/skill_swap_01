@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { rescheduleSession } from "@/lib/actions/sessions";
+import { rescheduleSession } from "@/lib/actions/sessions-test";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Calendar } from "lucide-react";
@@ -67,16 +67,14 @@ export default function RescheduleDialog({
     if (!newScheduledAt) {
       toast.error("Please select a new time for the session");
       return;
-    }
-
-    startTransition(async () => {
+    }    startTransition(async () => {
       const result = await rescheduleSession(sessionId, newScheduledAt);
-      if ("success" in result) {
+      if (result.success) {
         toast.success("Session rescheduled successfully");
         onClose();
         router.refresh();
       } else {
-        toast.error(result.errors?.general?.[0] || "Failed to reschedule session");
+        toast.error(result.message || "Failed to reschedule session");
       }
     });
   };

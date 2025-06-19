@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createOneOnOneSessionAction, createGroupSessionAction } from "@/lib/actions/create-session-actions";
+import {
+  createOneOnOneSessionAction,
+  createGroupSessionAction,
+} from "@/lib/actions/create-session-actions";
 import { getUserConnectionsServer } from "@/lib/actions/get-user-connections";
 import { Button } from "@/components/ui/button";
 import {
@@ -82,7 +85,10 @@ export default function CreateSessionDialog({ children }: CreateSessionDialogPro
           console.log("🔍 getUserConnectionsServer resolved with:", connections);
           console.log("🔍 Number of connections:", connections?.length || 0);
           if (connections && connections.length > 0) {
-            console.log("🔍 Connection details:", connections.map(c => ({ id: c.user_id, name: c.full_name })));
+            console.log(
+              "🔍 Connection details:",
+              connections.map((c) => ({ id: c.user_id, name: c.full_name }))
+            );
           }
           setConnections(connections || []);
         })
@@ -122,9 +128,7 @@ export default function CreateSessionDialog({ children }: CreateSessionDialogPro
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
           <DialogTitle>Schedule a Session</DialogTitle>
@@ -133,7 +137,11 @@ export default function CreateSessionDialog({ children }: CreateSessionDialogPro
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs value={sessionType} onValueChange={(value) => setSessionType(value as "one-on-one" | "group")} className="w-full">
+        <Tabs
+          value={sessionType}
+          onValueChange={(value) => setSessionType(value as "one-on-one" | "group")}
+          className="w-full"
+        >
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="one-on-one" className="flex items-center gap-2">
               <User className="h-4 w-4" />
@@ -148,7 +156,7 @@ export default function CreateSessionDialog({ children }: CreateSessionDialogPro
           <TabsContent value="one-on-one" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <User className="h-5 w-5" />
                   One-on-One Session
                 </CardTitle>
@@ -163,7 +171,11 @@ export default function CreateSessionDialog({ children }: CreateSessionDialogPro
                   <div className="space-y-2">
                     <Label htmlFor="participant">Select Participant</Label>
                     {connections.length > 0 ? (
-                      <Select name="participantId" value={selectedConnection} onValueChange={setSelectedConnection}>
+                      <Select
+                        name="participantId"
+                        value={selectedConnection}
+                        onValueChange={setSelectedConnection}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Choose someone to meet with" />
                         </SelectTrigger>
@@ -184,11 +196,13 @@ export default function CreateSessionDialog({ children }: CreateSessionDialogPro
                         </SelectContent>
                       </Select>
                     ) : (
-                      <div className="text-sm text-slate-500 p-3 border rounded-md">
-                        No connections found. Start a conversation with someone first to schedule a session.
+                      <div className="rounded-md border p-3 text-sm text-slate-500">
+                        No connections found. Start a conversation with someone first to schedule a
+                        session.
                         {/* Debug info */}
-                        <div className="text-xs mt-2 text-slate-400">
-                          Debug: connections.length = {connections.length}, connections = {JSON.stringify(connections)}
+                        <div className="mt-2 text-xs text-slate-400">
+                          Debug: connections.length = {connections.length}, connections ={" "}
+                          {JSON.stringify(connections)}
                         </div>
                       </div>
                     )}
@@ -249,7 +263,7 @@ export default function CreateSessionDialog({ children }: CreateSessionDialogPro
           <TabsContent value="group" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
                   <Users className="h-5 w-5" />
                   Group Session
                 </CardTitle>
@@ -310,11 +324,7 @@ export default function CreateSessionDialog({ children }: CreateSessionDialogPro
                     </div>
                   </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full"
-                    disabled={isPending}
-                  >
+                  <Button type="submit" className="w-full" disabled={isPending}>
                     {isPending ? "Creating..." : "Create Group Session"}
                   </Button>
                 </form>

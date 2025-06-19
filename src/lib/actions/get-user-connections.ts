@@ -11,8 +11,8 @@ export async function getUserConnectionsServer(): Promise<Connection[]> {
     error: authError,
   } = await supabase.auth.getUser();
 
-  console.log("getUserConnectionsServer debug - user:", user?.id || 'no user');
-  console.log("getUserConnectionsServer debug - authError:", authError?.message || 'no error');
+  console.log("getUserConnectionsServer debug - user:", user?.id || "no user");
+  console.log("getUserConnectionsServer debug - authError:", authError?.message || "no error");
 
   if (authError || !user) {
     console.log("getUserConnectionsServer debug - no authenticated user, returning empty array");
@@ -42,7 +42,7 @@ export async function getUserConnectionsServer(): Promise<Connection[]> {
       .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
       .eq("status", "accepted");
 
-    console.log("getUserConnectionsServer debug - query error:", error?.message || 'no error');
+    console.log("getUserConnectionsServer debug - query error:", error?.message || "no error");
     console.log("getUserConnectionsServer debug - connections found:", connections?.length || 0);
     console.log("getUserConnectionsServer debug - raw connections data:", connections);
 
@@ -63,10 +63,12 @@ export async function getUserConnectionsServer(): Promise<Connection[]> {
 
       console.log("getUserConnectionsServer debug - transforming connection:", {
         isUserSender,
-        otherUser: otherUser ? {
-          user_id: otherUser.user_id,
-          full_name: otherUser.full_name
-        } : 'null'
+        otherUser: otherUser
+          ? {
+              user_id: otherUser.user_id,
+              full_name: otherUser.full_name,
+            }
+          : "null",
       });
 
       return {
@@ -77,7 +79,10 @@ export async function getUserConnectionsServer(): Promise<Connection[]> {
       };
     });
 
-    console.log("getUserConnectionsServer debug - final transformed connections:", transformedConnections);
+    console.log(
+      "getUserConnectionsServer debug - final transformed connections:",
+      transformedConnections
+    );
     return transformedConnections;
   } catch (error) {
     console.error("Error in getUserConnectionsServer:", error);

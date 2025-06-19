@@ -8,7 +8,7 @@ import {
   notifySessionScheduled,
   notifySessionCancelled,
   notifySessionRescheduled,
-  notifyGroupSessionJoined
+  notifyGroupSessionJoined,
 } from "@/lib/notifications/session-notifications";
 import { Connection, SessionActionResult, CreateSessionResult } from "@/types/sessions";
 
@@ -29,7 +29,10 @@ export async function createOneOnOneSession(formData: FormData): Promise<CreateS
   const supabase = await createClient();
 
   // Get current user
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -54,13 +57,15 @@ export async function createOneOnOneSession(formData: FormData): Promise<CreateS
     const { data: connection, error: connectionError } = await supabase
       .from("connections")
       .select("*")
-      .or(`and(user_id.eq.${user.id},connected_user_id.eq.${participantId}),and(user_id.eq.${participantId},connected_user_id.eq.${user.id})`)
+      .or(
+        `and(user_id.eq.${user.id},connected_user_id.eq.${participantId}),and(user_id.eq.${participantId},connected_user_id.eq.${user.id})`
+      )
       .eq("status", "accepted")
       .single();
 
     if (connectionError || !connection) {
       return {
-        errors: { general: ["You can only schedule sessions with accepted connections"] }
+        errors: { general: ["You can only schedule sessions with accepted connections"] },
       };
     }
 
@@ -80,7 +85,7 @@ export async function createOneOnOneSession(formData: FormData): Promise<CreateS
     if (sessionError) {
       console.error("Session creation error:", sessionError);
       return {
-        errors: { general: ["Failed to create session. Please try again."] }
+        errors: { general: ["Failed to create session. Please try again."] },
       };
     }
 
@@ -99,7 +104,7 @@ export async function createOneOnOneSession(formData: FormData): Promise<CreateS
   } catch (error) {
     console.error("Error creating one-on-one session:", error);
     return {
-      errors: { general: ["An unexpected error occurred. Please try again."] }
+      errors: { general: ["An unexpected error occurred. Please try again."] },
     };
   }
 }
@@ -108,7 +113,10 @@ export async function createGroupSession(formData: FormData): Promise<CreateSess
   const supabase = await createClient();
 
   // Get current user
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -145,23 +153,21 @@ export async function createGroupSession(formData: FormData): Promise<CreateSess
     if (groupError) {
       console.error("Group session creation error:", groupError);
       return {
-        errors: { general: ["Failed to create group session. Please try again."] }
+        errors: { general: ["Failed to create group session. Please try again."] },
       };
     }
 
     // Add creator as participant
-    const { error: participantError } = await supabase
-      .from("group_session_participants")
-      .insert({
-        group_session_id: groupSession.id,
-        user_id: user.id,
-        joined_at: new Date().toISOString(),
-      });
+    const { error: participantError } = await supabase.from("group_session_participants").insert({
+      group_session_id: groupSession.id,
+      user_id: user.id,
+      joined_at: new Date().toISOString(),
+    });
 
     if (participantError) {
       console.error("Participant addition error:", participantError);
       return {
-        errors: { general: ["Failed to join the session you created. Please try again."] }
+        errors: { general: ["Failed to join the session you created. Please try again."] },
       };
     }
 
@@ -170,7 +176,7 @@ export async function createGroupSession(formData: FormData): Promise<CreateSess
   } catch (error) {
     console.error("Error creating group session:", error);
     return {
-      errors: { general: ["An unexpected error occurred. Please try again."] }
+      errors: { general: ["An unexpected error occurred. Please try again."] },
     };
   }
 }
@@ -178,7 +184,10 @@ export async function createGroupSession(formData: FormData): Promise<CreateSess
 export async function joinGroupSession(groupSessionId: string): Promise<SessionActionResult> {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -194,7 +203,7 @@ export async function joinGroupSession(groupSessionId: string): Promise<SessionA
 
     if (existingParticipant) {
       return {
-        errors: { general: ["You are already a participant in this session"] }
+        errors: { general: ["You are already a participant in this session"] },
       };
     }
 
@@ -207,29 +216,27 @@ export async function joinGroupSession(groupSessionId: string): Promise<SessionA
 
     if (sessionError || !groupSession) {
       return {
-        errors: { general: ["Session not found"] }
+        errors: { general: ["Session not found"] },
       };
     }
 
     if (groupSession.status !== "scheduled") {
       return {
-        errors: { general: ["Cannot join a session that has already started or ended"] }
+        errors: { general: ["Cannot join a session that has already started or ended"] },
       };
     }
 
     // Join the session
-    const { error } = await supabase
-      .from("group_session_participants")
-      .insert({
-        group_session_id: groupSessionId,
-        user_id: user.id,
-        joined_at: new Date().toISOString(),
-      });
+    const { error } = await supabase.from("group_session_participants").insert({
+      group_session_id: groupSessionId,
+      user_id: user.id,
+      joined_at: new Date().toISOString(),
+    });
 
     if (error) {
       console.error("Error joining group session:", error);
       return {
-        errors: { general: ["Failed to join group session"] }
+        errors: { general: ["Failed to join group session"] },
       };
     }
 
@@ -241,14 +248,19 @@ export async function joinGroupSession(groupSessionId: string): Promise<SessionA
       .single();
 
     const participantName = userProfile?.full_name || user.email || "Someone";
-    await notifyGroupSessionJoined(groupSession.creator_id, groupSessionId, participantName, groupSession.topic);
+    await notifyGroupSessionJoined(
+      groupSession.creator_id,
+      groupSessionId,
+      participantName,
+      groupSession.topic
+    );
 
     revalidatePath("/sessions");
     return { success: true };
   } catch (error) {
     console.error("Error joining group session:", error);
     return {
-      errors: { general: ["An unexpected error occurred"] }
+      errors: { general: ["An unexpected error occurred"] },
     };
   }
 }
@@ -256,7 +268,10 @@ export async function joinGroupSession(groupSessionId: string): Promise<SessionA
 export async function cancelSession(sessionId: string): Promise<SessionActionResult> {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -271,14 +286,14 @@ export async function cancelSession(sessionId: string): Promise<SessionActionRes
 
     if (fetchError || !session) {
       return {
-        errors: { general: ["Session not found"] }
+        errors: { general: ["Session not found"] },
       };
     }
 
     // Check if user has permission to cancel (must be requester or participant)
     if (session.requester_id !== user.id && session.participant_id !== user.id) {
       return {
-        errors: { general: ["You don't have permission to cancel this session"] }
+        errors: { general: ["You don't have permission to cancel this session"] },
       };
     }
 
@@ -291,12 +306,13 @@ export async function cancelSession(sessionId: string): Promise<SessionActionRes
     if (error) {
       console.error("Error cancelling session:", error);
       return {
-        errors: { general: ["Failed to cancel session"] }
+        errors: { general: ["Failed to cancel session"] },
       };
     }
 
     // Notify the other participant
-    const otherUserId = session.requester_id === user.id ? session.participant_id : session.requester_id;
+    const otherUserId =
+      session.requester_id === user.id ? session.participant_id : session.requester_id;
 
     const { data: userProfile } = await supabase
       .from("profiles")
@@ -312,15 +328,21 @@ export async function cancelSession(sessionId: string): Promise<SessionActionRes
   } catch (error) {
     console.error("Error cancelling session:", error);
     return {
-      errors: { general: ["An unexpected error occurred"] }
+      errors: { general: ["An unexpected error occurred"] },
     };
   }
 }
 
-export async function rescheduleSession(sessionId: string, newScheduledAt: string): Promise<SessionActionResult> {
+export async function rescheduleSession(
+  sessionId: string,
+  newScheduledAt: string
+): Promise<SessionActionResult> {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -335,14 +357,14 @@ export async function rescheduleSession(sessionId: string, newScheduledAt: strin
 
     if (fetchError || !session) {
       return {
-        errors: { general: ["Session not found"] }
+        errors: { general: ["Session not found"] },
       };
     }
 
     // Check if user has permission to reschedule
     if (session.requester_id !== user.id && session.participant_id !== user.id) {
       return {
-        errors: { general: ["You don't have permission to reschedule this session"] }
+        errors: { general: ["You don't have permission to reschedule this session"] },
       };
     }
 
@@ -353,19 +375,20 @@ export async function rescheduleSession(sessionId: string, newScheduledAt: strin
       .from("sessions")
       .update({
         scheduled_at: newScheduledAt,
-        status: "scheduled" // Reset to scheduled if it was cancelled
+        status: "scheduled", // Reset to scheduled if it was cancelled
       })
       .eq("id", sessionId);
 
     if (error) {
       console.error("Error rescheduling session:", error);
       return {
-        errors: { general: ["Failed to reschedule session"] }
+        errors: { general: ["Failed to reschedule session"] },
       };
     }
 
     // Notify the other participant
-    const otherUserId = session.requester_id === user.id ? session.participant_id : session.requester_id;
+    const otherUserId =
+      session.requester_id === user.id ? session.participant_id : session.requester_id;
 
     const { data: userProfile } = await supabase
       .from("profiles")
@@ -374,14 +397,20 @@ export async function rescheduleSession(sessionId: string, newScheduledAt: strin
       .single();
 
     const organizerName = userProfile?.full_name || user.email || "Someone";
-    await notifySessionRescheduled(otherUserId, sessionId, organizerName, oldScheduledAt, newScheduledAt);
+    await notifySessionRescheduled(
+      otherUserId,
+      sessionId,
+      organizerName,
+      oldScheduledAt,
+      newScheduledAt
+    );
 
     revalidatePath("/sessions");
     return { success: true };
   } catch (error) {
     console.error("Error rescheduling session:", error);
     return {
-      errors: { general: ["An unexpected error occurred"] }
+      errors: { general: ["An unexpected error occurred"] },
     };
   }
 }
@@ -389,7 +418,10 @@ export async function rescheduleSession(sessionId: string, newScheduledAt: strin
 export async function cancelGroupSession(groupSessionId: string): Promise<SessionActionResult> {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -404,14 +436,14 @@ export async function cancelGroupSession(groupSessionId: string): Promise<Sessio
 
     if (fetchError || !groupSession) {
       return {
-        errors: { general: ["Group session not found"] }
+        errors: { general: ["Group session not found"] },
       };
     }
 
     // Check if user is the creator
     if (groupSession.creator_id !== user.id) {
       return {
-        errors: { general: ["Only the session creator can cancel a group session"] }
+        errors: { general: ["Only the session creator can cancel a group session"] },
       };
     }
 
@@ -424,7 +456,7 @@ export async function cancelGroupSession(groupSessionId: string): Promise<Sessio
     if (error) {
       console.error("Error cancelling group session:", error);
       return {
-        errors: { general: ["Failed to cancel group session"] }
+        errors: { general: ["Failed to cancel group session"] },
       };
     }
 
@@ -447,7 +479,12 @@ export async function cancelGroupSession(groupSessionId: string): Promise<Sessio
     // Notify all participants
     if (participants) {
       for (const participant of participants) {
-        await notifySessionCancelled(participant.user_id, groupSessionId, organizerName, groupSession.scheduled_at);
+        await notifySessionCancelled(
+          participant.user_id,
+          groupSessionId,
+          organizerName,
+          groupSession.scheduled_at
+        );
       }
     }
 
@@ -456,7 +493,7 @@ export async function cancelGroupSession(groupSessionId: string): Promise<Sessio
   } catch (error) {
     console.error("Error cancelling group session:", error);
     return {
-      errors: { general: ["An unexpected error occurred"] }
+      errors: { general: ["An unexpected error occurred"] },
     };
   }
 }
@@ -465,7 +502,10 @@ export async function cancelGroupSession(groupSessionId: string): Promise<Sessio
 export async function getUserConnections(): Promise<Connection[]> {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     return [];
   }
@@ -473,7 +513,8 @@ export async function getUserConnections(): Promise<Connection[]> {
   try {
     const { data: connections, error } = await supabase
       .from("connections")
-      .select(`
+      .select(
+        `
         *,
         connected_user:profiles!connections_connected_user_id_fkey(
           id,
@@ -487,7 +528,8 @@ export async function getUserConnections(): Promise<Connection[]> {
           email,
           profile_image_url
         )
-      `)
+      `
+      )
       .or(`user_id.eq.${user.id},connected_user_id.eq.${user.id}`)
       .eq("status", "accepted");
 
@@ -497,17 +539,19 @@ export async function getUserConnections(): Promise<Connection[]> {
     }
 
     // Transform the data to normalize the connection format
-    return connections?.map(conn => {
-      const isUserInitiator = conn.user_id === user.id;
-      const otherUser = isUserInitiator ? conn.connected_user : conn.user;
+    return (
+      connections?.map((conn) => {
+        const isUserInitiator = conn.user_id === user.id;
+        const otherUser = isUserInitiator ? conn.connected_user : conn.user;
 
-      return {
-        user_id: otherUser.id,
-        full_name: otherUser.full_name,
-        email: otherUser.email,
-        profile_image_url: otherUser.profile_image_url,
-      };
-    }) || [];
+        return {
+          user_id: otherUser.id,
+          full_name: otherUser.full_name,
+          email: otherUser.email,
+          profile_image_url: otherUser.profile_image_url,
+        };
+      }) || []
+    );
   } catch (error) {
     console.error("Error in getUserConnections:", error);
     return [];
@@ -518,7 +562,10 @@ export async function getUserConnections(): Promise<Connection[]> {
 export async function getUserSessions() {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     return { sessions: [], groupSessions: [], errors: {} };
   }
@@ -527,7 +574,8 @@ export async function getUserSessions() {
     // Get one-on-one sessions
     const { data: sessions, error: sessionsError } = await supabase
       .from("sessions")
-      .select(`
+      .select(
+        `
         *,
         requester:profiles!sessions_requester_id_fkey(
           id,
@@ -541,14 +589,16 @@ export async function getUserSessions() {
           email,
           profile_image_url
         )
-      `)
+      `
+      )
       .or(`requester_id.eq.${user.id},participant_id.eq.${user.id}`)
       .order("scheduled_at", { ascending: true });
 
     // Get group sessions where user is creator or participant
     const { data: groupSessions, error: groupSessionsError } = await supabase
       .from("group_sessions")
-      .select(`
+      .select(
+        `
         *,
         creator:profiles!group_sessions_creator_id_fkey(
           id,
@@ -566,7 +616,8 @@ export async function getUserSessions() {
             profile_image_url
           )
         )
-      `)
+      `
+      )
       .or(`creator_id.eq.${user.id},group_session_participants.user_id.eq.${user.id}`)
       .order("scheduled_at", { ascending: true });
 

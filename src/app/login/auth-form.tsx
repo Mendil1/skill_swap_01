@@ -15,12 +15,10 @@ import {
 } from "@/components/ui/dialog";
 
 interface AuthFormProps {
-  login: (formData: FormData) => Promise<void>;
-  signup: (formData: FormData) => Promise<void>;
   error?: string; // Add error prop to receive error messages
 }
 
-export function AuthForm({ login, signup, error }: AuthFormProps) {
+export function AuthForm({ error }: AuthFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState(""); // Add state for full name
@@ -83,9 +81,7 @@ export function AuthForm({ login, signup, error }: AuthFormProps) {
   };
 
   // Validate before form submission - now used to prevent default if there's an error
-  const validatePasswordBeforeSubmit = (
-    e: React.FormEvent<HTMLFormElement>
-  ) => {
+  const validatePasswordBeforeSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     let hasError = false;
 
     // Only validate in signup mode
@@ -119,7 +115,7 @@ export function AuthForm({ login, signup, error }: AuthFormProps) {
           setFullNameError(null); // Clear full name errors when switching tabs
         }}
       >
-        <TabsList className="grid w-full grid-cols-2 mb-6">
+        <TabsList className="mb-6 grid w-full grid-cols-2">
           <TabsTrigger value="login">Log In</TabsTrigger>
           <TabsTrigger value="signup">Sign Up</TabsTrigger>
         </TabsList>
@@ -147,12 +143,41 @@ export function AuthForm({ login, signup, error }: AuthFormProps) {
               required
               value={password}
               onChange={handlePasswordChange}
-            />
-          </div>
+            />{" "}
+          </div>{" "}
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                const formData = new FormData();
+                formData.append("email", email);
+                formData.append("password", password);
 
-          <form action={login}>
-            <input type="hidden" name="email" value={email} />
-            <input type="hidden" name="password" value={password} />
+                console.log("[AuthForm] Submitting login request...");
+
+                const response = await fetch("/api/auth/login", {
+                  method: "POST",
+                  body: formData,
+                  credentials: "include", // Important: include cookies in request
+                });
+
+                const data = await response.json();
+                console.log("[AuthForm] Login response:", data);
+
+                if (data.success) {
+                  console.log("[AuthForm] Login successful, redirecting...");
+                  // Force a page reload to ensure session is properly established
+                  window.location.href = data.redirectTo || "/";
+                } else {
+                  console.error("Login failed:", data.message);
+                  alert(`Login failed: ${data.message || "Unknown error"}`);
+                }
+              } catch (error) {
+                console.error("Login error:", error);
+                alert("Login failed: Network or server error");
+              }
+            }}
+          >
             <Button type="submit" className="w-full">
               Log in
             </Button>
@@ -173,10 +198,8 @@ export function AuthForm({ login, signup, error }: AuthFormProps) {
               className={fullNameError ? "border-red-500" : ""}
             />
             {fullNameError ? (
-              <Alert variant="destructive" className="py-2 mt-1">
-                <AlertDescription className="text-xs">
-                  {fullNameError}
-                </AlertDescription>
+              <Alert variant="destructive" className="mt-1 py-2">
+                <AlertDescription className="text-xs">{fullNameError}</AlertDescription>
               </Alert>
             ) : null}
           </div>
@@ -205,15 +228,12 @@ export function AuthForm({ login, signup, error }: AuthFormProps) {
               className={passwordError ? "border-red-500" : ""}
             />
             {passwordError ? (
-              <Alert variant="destructive" className="py-2 mt-1">
-                <AlertDescription className="text-xs">
-                  {passwordError}
-                </AlertDescription>
+              <Alert variant="destructive" className="mt-1 py-2">
+                <AlertDescription className="text-xs">{passwordError}</AlertDescription>
               </Alert>
             ) : null}
-          </div>
-
-          <form action={signup} onSubmit={validatePasswordBeforeSubmit}>
+          </div>{" "}
+          <form action="/api/auth/signup" method="POST" onSubmit={validatePasswordBeforeSubmit}>
             <input type="hidden" name="full_name" value={fullName} />
             <input type="hidden" name="email" value={email} />
             <input type="hidden" name="password" value={password} />
@@ -230,9 +250,7 @@ export function AuthForm({ login, signup, error }: AuthFormProps) {
           <DialogHeader>
             <DialogTitle>Authentication Error</DialogTitle>
           </DialogHeader>
-          <p className="py-4">
-            {error || "There was an error with your authentication attempt."}
-          </p>
+          <p className="py-4">{error || "There was an error with your authentication attempt."}</p>
           <p>Would you like to continue and try again?</p>
           <DialogFooter className="flex items-center justify-between">
             <Button variant="outline" onClick={handleCancel}>

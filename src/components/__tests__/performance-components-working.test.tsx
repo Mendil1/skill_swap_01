@@ -41,9 +41,25 @@ Object.defineProperty(window, 'localStorage', {
 });
 
 describe('Performance Components', () => {
+  const originalEnv = process.env.NODE_ENV;
+  
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.NODE_ENV = 'development';
+    // Use Object.defineProperty to properly mock NODE_ENV
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: 'development',
+      writable: true,
+      configurable: true
+    });
+  });
+
+  afterEach(() => {
+    // Restore original NODE_ENV
+    Object.defineProperty(process.env, 'NODE_ENV', {
+      value: originalEnv,
+      writable: true,
+      configurable: true
+    });
   });
 
   describe('NetworkMonitorWrapper', () => {

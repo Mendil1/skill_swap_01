@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Messages Page Test</title>
+</head>
+<body>
+    <h1>Messages Page Authentication Test</h1>
+    <div id="status">Testing...</div>
+    <div id="results"></div>
+
+    <script>
+        async function testMessagesPage() {
+            const statusDiv = document.getElementById('status');
+            const resultsDiv = document.getElementById('results');
+
+            try {
+                statusDiv.innerHTML = 'Fetching messages page...';
+
+                // Test if we can access the messages page
+                const response = await fetch('http://localhost:3000/messages');
+
+                if (response.ok) {
+                    statusDiv.innerHTML = '✅ Messages page accessible';
+                    resultsDiv.innerHTML = `
+                        <h3>Test Results:</h3>
+                        <p>✅ Status: ${response.status}</p>
+                        <p>✅ Messages page loaded successfully</p>
+                        <p>🎯 <strong>Next step:</strong> Check if page shows real user data instead of demo data</p>
+                        <p>📝 <strong>Expected:</strong> Page should redirect to login if not authenticated, or show actual user messages if logged in</p>
+                    `;
+                } else if (response.status === 302 || response.status === 307) {
+                    statusDiv.innerHTML = '🔄 Redirected (likely to login page)';
+                    resultsDiv.innerHTML = `
+                        <h3>Redirect Detected:</h3>
+                        <p>Status: ${response.status}</p>
+                        <p>✅ This is expected behavior when not authenticated</p>
+                        <p>🎯 <strong>Test with authentication:</strong> Login first, then visit messages page</p>
+                    `;
+                } else {
+                    statusDiv.innerHTML = '❌ Unexpected response';
+                    resultsDiv.innerHTML = `
+                        <h3>Error:</h3>
+                        <p>Status: ${response.status}</p>
+                        <p>Response: ${response.statusText}</p>
+                    `;
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '❌ Test failed';
+                resultsDiv.innerHTML = `
+                    <h3>Error:</h3>
+                    <p>${error.message}</p>
+                    <p><strong>Note:</strong> Make sure the development server is running on http://localhost:3000</p>
+                `;
+            }
+        }
+
+        // Run test when page loads
+        testMessagesPage();
+    </script>
+</body>
+</html>

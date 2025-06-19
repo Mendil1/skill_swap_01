@@ -30,7 +30,9 @@ export type GroupSession = Database["public"]["Tables"]["group_sessions"]["Row"]
   }>;
 };
 
-export type SessionWithType = (Session & { type: "one-on-one" }) | (GroupSession & { type: "group" });
+export type SessionWithType =
+  | (Session & { type: "one-on-one" })
+  | (GroupSession & { type: "group" });
 
 export type SessionStatus = "upcoming" | "ongoing" | "completed" | "cancelled";
 
@@ -55,9 +57,7 @@ export type CreateSessionResult =
         durationMinutes?: string[];
         topic?: string[];
         participantId?: string[];
-      }
+      };
     };
 
-export type SessionActionResult =
-  | { success: true }
-  | { errors: { general?: string[] } };
+export type SessionActionResult = { success: true } | { errors: { general?: string[] } };

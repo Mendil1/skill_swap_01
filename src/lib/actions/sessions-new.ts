@@ -8,7 +8,7 @@ import {
   notifySessionScheduled,
   notifySessionCancelled,
   notifySessionRescheduled,
-  notifyGroupSessionJoined
+  notifyGroupSessionJoined,
 } from "@/lib/notifications/session-notifications";
 import { Connection, SessionActionResult, CreateSessionResult } from "@/types/sessions";
 
@@ -29,7 +29,10 @@ export async function createOneOnOneSession(formData: FormData): Promise<CreateS
   const supabase = await createClient();
 
   // Get current user
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -93,7 +96,10 @@ export async function createGroupSession(formData: FormData): Promise<CreateSess
   const supabase = await createClient();
 
   // Get current user
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -138,7 +144,10 @@ export async function createGroupSession(formData: FormData): Promise<CreateSess
 export async function getUserSessions() {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -146,18 +155,21 @@ export async function getUserSessions() {
   // Get one-on-one sessions
   const { data: sessions, error: sessionsError } = await supabase
     .from("sessions")
-    .select(`
+    .select(
+      `
       *,
       organizer:users!organizer_id(full_name, email, profile_image_url),
       participant:users!participant_id(full_name, email, profile_image_url)
-    `)
+    `
+    )
     .or(`organizer_id.eq.${user.id},participant_id.eq.${user.id}`)
     .order("scheduled_at", { ascending: true });
 
   // Get group sessions
   const { data: groupSessions, error: groupSessionsError } = await supabase
     .from("group_sessions")
-    .select(`
+    .select(
+      `
       *,
       organizer:users!organizer_id(full_name, email, profile_image_url),
       group_session_participants(
@@ -165,7 +177,8 @@ export async function getUserSessions() {
         joined_at,
         participant:users(full_name, email, profile_image_url)
       )
-    `)
+    `
+    )
     .eq("organizer_id", user.id)
     .order("scheduled_at", { ascending: true });
 
@@ -187,7 +200,10 @@ export async function cancelSession(
 ): Promise<SessionActionResult> {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -197,11 +213,13 @@ export async function cancelSession(
   // Get session details before deletion for notifications
   const { data: sessionDetails } = await supabase
     .from(tableName)
-    .select(`
+    .select(
+      `
       organizer_id,
       scheduled_at,
       ${sessionType === "one-on-one" ? "participant_id" : "topic"}
-    `)
+    `
+    )
     .eq("session_id", sessionId)
     .single();
 
@@ -218,10 +236,7 @@ export async function cancelSession(
     .single();
 
   // Delete the session
-  const { error } = await supabase
-    .from(tableName)
-    .delete()
-    .eq("session_id", sessionId);
+  const { error } = await supabase.from(tableName).delete().eq("session_id", sessionId);
 
   if (error) {
     return { errors: { general: ["Failed to cancel session"] } };
@@ -247,7 +262,7 @@ export async function cancelSession(
 
       if (participants) {
         await Promise.all(
-          participants.map(p =>
+          participants.map((p) =>
             notifySessionCancelled(
               p.user_id,
               sessionId,
@@ -271,7 +286,10 @@ export async function rescheduleSession(
 ): Promise<SessionActionResult> {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -281,11 +299,13 @@ export async function rescheduleSession(
   // Get session details and verify organizer
   const { data: sessionDetails } = await supabase
     .from(tableName)
-    .select(`
+    .select(
+      `
       organizer_id,
       scheduled_at,
       ${sessionType === "one-on-one" ? "participant_id" : "topic"}
-    `)
+    `
+    )
     .eq("session_id", sessionId)
     .single();
 
@@ -332,7 +352,7 @@ export async function rescheduleSession(
 
       if (participants) {
         await Promise.all(
-          participants.map(p =>
+          participants.map((p) =>
             notifySessionRescheduled(
               p.user_id,
               sessionId,
@@ -353,7 +373,10 @@ export async function rescheduleSession(
 export async function joinGroupSession(sessionId: string): Promise<SessionActionResult> {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     redirect("/login");
   }
@@ -371,12 +394,10 @@ export async function joinGroupSession(sessionId: string): Promise<SessionAction
   }
 
   // Add user as participant
-  const { error } = await supabase
-    .from("group_session_participants")
-    .insert({
-      session_id: sessionId,
-      user_id: user.id,
-    });
+  const { error } = await supabase.from("group_session_participants").insert({
+    session_id: sessionId,
+    user_id: user.id,
+  });
 
   if (error) {
     return { errors: { general: ["Failed to join session"] } };
@@ -389,11 +410,7 @@ export async function joinGroupSession(sessionId: string): Promise<SessionAction
       .select("organizer_id, topic")
       .eq("session_id", sessionId)
       .single(),
-    supabase
-      .from("users")
-      .select("full_name")
-      .eq("user_id", user.id)
-      .single()
+    supabase.from("users").select("full_name").eq("user_id", user.id).single(),
   ]);
 
   // Notify the organizer
@@ -413,7 +430,10 @@ export async function joinGroupSession(sessionId: string): Promise<SessionAction
 export async function getConnections(): Promise<{ connections: Connection[]; error?: string }> {
   const supabase = await createClient();
 
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
   if (authError || !user) {
     return { connections: [] };
   }
@@ -421,12 +441,14 @@ export async function getConnections(): Promise<{ connections: Connection[]; err
   // Get user's connections (people they've messaged or who have messaged them)
   const { data: connections, error } = await supabase
     .from("messages")
-    .select(`
+    .select(
+      `
       sender_id,
       receiver_id,
       sender:users!sender_id(user_id, full_name, email, profile_image_url),
       receiver:users!receiver_id(user_id, full_name, email, profile_image_url)
-    `)
+    `
+    )
     .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)
     .order("sent_at", { ascending: false });
 

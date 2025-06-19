@@ -11,6 +11,7 @@ import MemoizedNotificationBell from "@/components/memoized-notification-bell";
 import NetworkMonitorWrapper from "@/components/network-monitor-wrapper";
 import { CommonResourceHints, PerformanceBudgetMonitor } from "@/components/resource-hints";
 import { IntelligentPrefetch } from "@/components/intelligent-prefetch";
+import { AuthProvider } from "@/components/auth-provider";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,14 +23,44 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getSession();
-  const user = data?.session?.user;
+  // Safely get session with error handling for invalid refresh tokens
+  let user = null;
+  try {
+    const { data, error } = await supabase.auth.getSession();
+
+    // If there's an invalid refresh token error, clear the session
+    if (
+      error &&
+      (error.message.includes("Invalid Refresh Token") ||
+        error.message.includes("Refresh Token Not Found"))
+    ) {
+      console.log("[Layout] Invalid refresh token detected, clearing session");
+      try {
+        await supabase.auth.signOut();
+      } catch (signOutError) {
+        console.error("[Layout] Error during signOut:", signOutError);
+      }
+    } else if (!error && data?.session) {
+      // Verify session with server for security
+      try {
+        const { data: userData, error: userError } = await supabase.auth.getUser();
+        if (userError) {
+          console.log("[Layout] Session verification failed, clearing session");
+          await supabase.auth.signOut();
+        } else {
+          user = userData.user;
+        }
+      } catch (verificationError) {
+        console.error("[Layout] Error verifying user:", verificationError);
+        user = data.session.user; // Fallback to session user
+      }
+    }
+  } catch (error) {
+    console.error("[Layout] Error getting session:", error);
+    // Continue with user = null
+  }
 
   // Define navigation links to use in both desktop and mobile nav
   const navLinks = [
@@ -38,11 +69,13 @@ export default async function RootLayout({
   ];
 
   // Add authenticated-only links
-  const authLinks = user ? [
-    { href: "/sessions", label: "Sessions" },
-    { href: "/messages", label: "Messages" },
-    { href: "/credits", label: "Credits" }
-  ] : [];
+  const authLinks = user
+    ? [
+        { href: "/sessions", label: "Sessions" },
+        { href: "/messages", label: "Messages" },
+        { href: "/credits", label: "Credits" },
+      ]
+    : [];
 
   // All links combined
   const allNavLinks = [...navLinks, ...authLinks];
@@ -52,15 +85,12 @@ export default async function RootLayout({
       <head>
         <CommonResourceHints />
       </head>
-      <body className={`${inter.className} min-h-screen flex flex-col`}>
+      <body className={`${inter.className} flex min-h-screen flex-col`}>
         <PerformanceBudgetMonitor />
         <IntelligentPrefetch />
-        <header className="border-b border-slate-200 sticky top-0 z-50 bg-white/95 backdrop-blur-sm">
-          <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-            <Link
-              href="/"
-              className="font-bold text-xl flex items-center gap-2 text-indigo-600"
-            >
+        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 backdrop-blur-sm">
+          <div className="container mx-auto flex items-center justify-between px-4 py-3">
+            <Link href="/" className="flex items-center gap-2 text-xl font-bold text-indigo-600">
               <FallbackImage
                 src="/skill_swap_logo_no_background.png"
                 alt="SkillSwap Logo"
@@ -79,7 +109,7 @@ export default async function RootLayout({
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className="text-slate-700 hover:text-indigo-600 transition-colors"
+                      className="text-slate-700 transition-colors hover:text-indigo-600"
                     >
                       {link.label}
                     </Link>
@@ -96,9 +126,9 @@ export default async function RootLayout({
 
                   <Link
                     href="/profile"
-                    className="flex items-center gap-2 text-sm text-slate-700 hover:text-indigo-600 transition-colors"
+                    className="flex items-center gap-2 text-sm text-slate-700 transition-colors hover:text-indigo-600"
                   >
-                    <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-indigo-600">
                       {user.email?.charAt(0).toUpperCase()}
                     </div>
                     <span className="hidden md:inline">My Profile</span>
@@ -115,11 +145,7 @@ export default async function RootLayout({
                 </>
               ) : (
                 <Link href="/login" className="hidden md:block">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="bg-indigo-600 hover:bg-indigo-700"
-                  >
+                  <Button variant="default" size="sm" className="bg-indigo-600 hover:bg-indigo-700">
                     Sign In
                   </Button>
                 </Link>
@@ -132,13 +158,13 @@ export default async function RootLayout({
             </div>
           </div>
         </header>
-
-        <main className="flex-1">{children}</main>
-
-        <footer className="bg-slate-900 text-white py-12 mt-12">
+        <AuthProvider>
+          <main className="flex-1">{children}</main>
+        </AuthProvider>
+        <footer className="mt-12 bg-slate-900 py-12 text-white">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <div className="font-bold text-xl flex items-center gap-2 mb-4">
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
+              <div className="mb-4 flex items-center gap-2 text-xl font-bold">
                 <FallbackImage
                   src="/skill_swap_logo_white_background.png"
                   alt="SkillSwap Logo"
@@ -151,36 +177,27 @@ export default async function RootLayout({
               </div>
 
               <div>
-                <p className="text-slate-400 text-sm">
-                  Connect with people who want to teach and learn from each
-                  other in a collaborative community.
+                <p className="text-sm text-slate-400">
+                  Connect with people who want to teach and learn from each other in a collaborative
+                  community.
                 </p>
               </div>
 
               <div>
-                <h3 className="font-semibold mb-4 text-lg">Quick Links</h3>
+                <h3 className="mb-4 text-lg font-semibold">Quick Links</h3>
                 <ul className="space-y-2 text-slate-400">
                   <li>
-                    <Link
-                      href="/"
-                      className="hover:text-indigo-400 transition-colors"
-                    >
+                    <Link href="/" className="transition-colors hover:text-indigo-400">
                       Home
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      href="/skills"
-                      className="hover:text-indigo-400 transition-colors"
-                    >
+                    <Link href="/skills" className="transition-colors hover:text-indigo-400">
                       Browse Skills
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      href="/#how-it-works"
-                      className="hover:text-indigo-400 transition-colors"
-                    >
+                    <Link href="/#how-it-works" className="transition-colors hover:text-indigo-400">
                       How It Works
                     </Link>
                   </li>
@@ -188,29 +205,20 @@ export default async function RootLayout({
               </div>
 
               <div>
-                <h3 className="font-semibold mb-4 text-lg">Account</h3>
+                <h3 className="mb-4 text-lg font-semibold">Account</h3>
                 <ul className="space-y-2 text-slate-400">
                   <li>
-                    <Link
-                      href="/login"
-                      className="hover:text-indigo-400 transition-colors"
-                    >
+                    <Link href="/login" className="transition-colors hover:text-indigo-400">
                       Sign In
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      href="/login"
-                      className="hover:text-indigo-400 transition-colors"
-                    >
+                    <Link href="/login" className="transition-colors hover:text-indigo-400">
                       Create Account
                     </Link>
                   </li>
                   <li>
-                    <Link
-                      href="/profile"
-                      className="hover:text-indigo-400 transition-colors"
-                    >
+                    <Link href="/profile" className="transition-colors hover:text-indigo-400">
                       My Profile
                     </Link>
                   </li>
@@ -218,37 +226,59 @@ export default async function RootLayout({
               </div>
 
               <div>
-                <h3 className="font-semibold mb-4 text-lg">Top Categories</h3>
+                <h3 className="mb-4 text-lg font-semibold">Top Categories</h3>
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    "Programming",
-                    "Languages",
-                    "Music",
-                    "Design",
-                    "Photography",
-                    "Cooking",
-                  ].map((cat) => (
-                    <span
-                      key={cat}
-                      className="px-2 py-1 bg-slate-800 text-slate-300 text-xs rounded-full"
-                    >
-                      {cat}
-                    </span>
-                  ))}
+                  {["Programming", "Languages", "Music", "Design", "Photography", "Cooking"].map(
+                    (cat) => (
+                      <span
+                        key={cat}
+                        className="rounded-full bg-slate-800 px-2 py-1 text-xs text-slate-300"
+                      >
+                        {cat}
+                      </span>
+                    )
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="border-t border-slate-800 mt-8 pt-8 text-slate-400 text-sm text-center">
-              <p>
-                © {new Date().getFullYear()} SkillSwap. All rights reserved.
-              </p>
+            <div className="mt-8 border-t border-slate-800 pt-8 text-center text-sm text-slate-400">
+              <p>© {new Date().getFullYear()} SkillSwap. All rights reserved.</p>
             </div>
           </div>
-        </footer>
-
+        </footer>{" "}
         <Toaster position="top-right" richColors closeButton />
-
+        {/* Include auth helper for client-side authentication */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.authHelper = {
+                isAuthenticated: function() {
+                  return document.cookie.includes('sb-sogwgxkxuuvvvjbqlcdo-auth-token=');
+                },
+                getUserEmail: function() {
+                  const authCookie = document.cookie
+                    .split(';')
+                    .find(c => c.trim().startsWith('sb-sogwgxkxuuvvvjbqlcdo-auth-token='));
+                  if (!authCookie) return null;
+                  try {
+                    const token = authCookie.split('=')[1];
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    return payload.email;
+                  } catch (e) {
+                    return null;
+                  }
+                },
+                getAuthToken: function() {
+                  const authCookie = document.cookie
+                    .split(';')
+                    .find(c => c.trim().startsWith('sb-sogwgxkxuuvvvjbqlcdo-auth-token='));
+                  return authCookie ? authCookie.split('=')[1] : null;
+                }
+              };
+            `,
+          }}
+        />
         {/* Include network monitor for authenticated users using the client wrapper */}
         <NetworkMonitorWrapper userId={user?.id} />
       </body>

@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { rescheduleSession } from "@/lib/actions/sessions";
+import { rescheduleSession } from "@/lib/actions/sessions-test";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Calendar } from "lucide-react";
@@ -68,15 +68,14 @@ export default function RescheduleDialog({
       toast.error("Please select a new time for the session");
       return;
     }
-
     startTransition(async () => {
       const result = await rescheduleSession(sessionId, newScheduledAt);
-      if ("success" in result) {
+      if (result.success) {
         toast.success("Session rescheduled successfully");
         onClose();
         router.refresh();
       } else {
-        toast.error(result.errors?.general?.[0] || "Failed to reschedule session");
+        toast.error(result.message || "Failed to reschedule session");
       }
     });
   };
@@ -86,15 +85,13 @@ export default function RescheduleDialog({
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Reschedule Session</DialogTitle>
-          <DialogDescription>
-            Choose a new date and time for your session.
-          </DialogDescription>
+          <DialogDescription>Choose a new date and time for your session.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label>Current Time</Label>
-            <div className="p-3 bg-slate-50 rounded-md text-sm">
+            <div className="rounded-md bg-slate-50 p-3 text-sm">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 {format(new Date(currentScheduledAt), "EEE, MMM d 'at' h:mm a")}

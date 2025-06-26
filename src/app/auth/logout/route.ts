@@ -3,23 +3,34 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
 export async function GET(request: Request) {
+  console.log("[Logout Route] Received sign-out request");
   const requestUrl = new URL(request.url);
-  // Must await cookies() in Next.js 15+
   const cookieStore = await cookies();
+  console.log("[Logout Route] Cookie store retrieved");
 
-  // Create a new supabase server client
   const supabase = await createClient();
+  console.log("[Logout Route] Supabase client created");
 
-  // Sign out by removing the session cookie
-  await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
 
-  // Clear all cookies to ensure the session is fully terminated
+  if (error) {
+    console.error("[Logout Route] Error signing out:", error);
+    return NextResponse.redirect(
+      `${requestUrl.origin}/login?error=Could not sign out`,
+      { status: 302 }
+    );
+  }
+  console.log("[Logout Route] Supabase signOut successful");
+
   const allCookies = cookieStore.getAll();
+  console.log(`[Logout Route] Found ${allCookies.length} cookies to clear`);
   allCookies.forEach((cookie) => {
+    console.log(`[Logout Route] Clearing cookie: ${cookie.name}`);
     cookieStore.delete(cookie.name);
   });
+  console.log("[Logout Route] All cookies cleared");
 
-  // Redirect to login page with a message
+  console.log("[Logout Route] Redirecting to login page");
   return NextResponse.redirect(
     `${requestUrl.origin}/login?message=You have been signed out successfully`,
     { status: 302 }

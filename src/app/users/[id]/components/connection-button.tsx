@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, Loader2, Check, X } from "lucide-react";
 import { createClient } from "@/utils/supabase/client";
@@ -14,80 +14,29 @@ interface ConnectionButtonProps {
   currentUserId: string;
   profileUserId: string;
   profileUserName: string;
+  initialConnectionStatus:
+    | "none"
+    | "pending-sent"
+    | "pending-received"
+    | "accepted"
+    | "rejected"
+    | "loading";
+  initialConnectionId: string | null;
 }
 
 export default function ConnectionButton({
   currentUserId,
   profileUserId,
   profileUserName,
+  initialConnectionStatus,
+  initialConnectionId,
 }: ConnectionButtonProps) {
-  const [connectionStatus, setConnectionStatus] = useState<
-    | "none"
-    | "pending-sent"
-    | "pending-received"
-    | "accepted"
-    | "rejected"
-    | "loading"
-  >("loading");
-  const [connectionId, setConnectionId] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState(
+    initialConnectionStatus
+  );
+  const [connectionId, setConnectionId] = useState(initialConnectionId);
   const [isProcessing, setIsProcessing] = useState(false);
   const supabase = createClient();
-
-  useEffect(() => {
-    async function checkConnectionStatus() {
-      try {
-        if (!currentUserId || !profileUserId) return;
-
-        console.log(
-          "Checking connection between users:",
-          currentUserId,
-          profileUserId
-        );
-
-        // Check for existing connection between the users
-        const { data, error } = await supabase
-          .from("connection_requests")
-          .select("connection_id, sender_id, receiver_id, status")
-          .or(
-            `and(sender_id.eq.${currentUserId},receiver_id.eq.${profileUserId}),and(sender_id.eq.${profileUserId},receiver_id.eq.${currentUserId})`
-          )
-          .single();
-
-        if (error && error.code !== "PGRST116") {
-          // PGRST116 is "no rows returned" error code
-          throw error;
-        }
-
-        if (!data) {
-          setConnectionStatus("none");
-          setConnectionId(null);
-          return;
-        }
-
-        console.log("Connection found:", data);
-
-        // Store the connection ID
-        setConnectionId(data.connection_id);
-
-        // Determine connection status
-        if (data.status === "accepted") {
-          setConnectionStatus("accepted");
-        } else if (data.status === "rejected") {
-          setConnectionStatus("rejected");
-        } else if (data.sender_id === currentUserId) {
-          setConnectionStatus("pending-sent");
-        } else {
-          setConnectionStatus("pending-received");
-        }
-      } catch (err) {
-        console.error("Error checking connection status:", err);
-        setConnectionStatus("none");
-        setConnectionId(null);
-      }
-    }
-
-    checkConnectionStatus();
-  }, [currentUserId, profileUserId, supabase]);
 
   const handleConnect = async () => {
     try {
@@ -111,7 +60,8 @@ export default function ConnectionButton({
         .from("users")
         .select("full_name")
         .eq("user_id", currentUserId)
-        .single();      if (!userError && userData) {
+        .single();
+      if (!userError && userData) {
         // Create notification for the connection request
         try {
           await createConnectionRequestNotification(
@@ -120,7 +70,10 @@ export default function ConnectionButton({
             data.connection_id
           );
         } catch (notificationError) {
-          console.error("Warning: Failed to create notification, but connection request was sent:", notificationError);
+          console.error(
+            "Warning: Failed to create notification, but connection request was sent:",
+            notificationError
+          );
           // Don't fail the entire operation if notification fails
         }
       }
@@ -130,19 +83,21 @@ export default function ConnectionButton({
       toast.success(`Connection request sent to ${profileUserName}`);
     } catch (err) {
       console.error("Error sending connection request:", err);
-      
+
       // Provide more detailed error information
       let errorMessage = "Failed to send connection request";
-      if (err && typeof err === 'object') {
-        if ('message' in err) {
+      if (err && typeof err === "object") {
+        if ("message" in err) {
           errorMessage = `Failed to send connection request: ${err.message}`;
-        } else if ('code' in err) {
+        } else if ("code" in err) {
           errorMessage = `Failed to send connection request (${err.code})`;
         } else {
-          errorMessage = `Failed to send connection request: ${JSON.stringify(err)}`;
+          errorMessage = `Failed to send connection request: ${JSON.stringify(
+            err
+          )}`;
         }
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
@@ -176,7 +131,8 @@ export default function ConnectionButton({
         .from("users")
         .select("full_name")
         .eq("user_id", currentUserId)
-        .single();      if (!userError && userData && connectionData) {
+        .single();
+      if (!userError && userData && connectionData) {
         // Create notification for the connection acceptance
         try {
           await createConnectionAcceptedNotification(
@@ -185,7 +141,10 @@ export default function ConnectionButton({
             connectionId
           );
         } catch (notificationError) {
-          console.error("Warning: Failed to create notification, but connection was accepted:", notificationError);
+          console.error(
+            "Warning: Failed to create notification, but connection was accepted:",
+            notificationError
+          );
           // Don't fail the entire operation if notification fails
         }
       }
@@ -194,19 +153,21 @@ export default function ConnectionButton({
       toast.success(`You are now connected with ${profileUserName}`);
     } catch (err) {
       console.error("Error accepting connection request:", err);
-      
+
       // Provide more detailed error information
       let errorMessage = "Failed to accept connection request";
-      if (err && typeof err === 'object') {
-        if ('message' in err) {
+      if (err && typeof err === "object") {
+        if ("message" in err) {
           errorMessage = `Failed to accept connection request: ${err.message}`;
-        } else if ('code' in err) {
+        } else if ("code" in err) {
           errorMessage = `Failed to accept connection request (${err.code})`;
         } else {
-          errorMessage = `Failed to accept connection request: ${JSON.stringify(err)}`;
+          errorMessage = `Failed to accept connection request: ${JSON.stringify(
+            err
+          )}`;
         }
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
@@ -224,23 +185,26 @@ export default function ConnectionButton({
         .update({ status: "rejected" })
         .eq("connection_id", connectionId);
 
-      if (error) throw error;      setConnectionStatus("rejected");
+      if (error) throw error;
+      setConnectionStatus("rejected");
       toast.success(`Connection request rejected`);
     } catch (err) {
       console.error("Error rejecting connection request:", err);
-      
+
       // Provide more detailed error information
       let errorMessage = "Failed to reject connection request";
-      if (err && typeof err === 'object') {
-        if ('message' in err) {
+      if (err && typeof err === "object") {
+        if ("message" in err) {
           errorMessage = `Failed to reject connection request: ${err.message}`;
-        } else if ('code' in err) {
+        } else if ("code" in err) {
           errorMessage = `Failed to reject connection request (${err.code})`;
         } else {
-          errorMessage = `Failed to reject connection request: ${JSON.stringify(err)}`;
+          errorMessage = `Failed to reject connection request: ${JSON.stringify(
+            err
+          )}`;
         }
       }
-      
+
       toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
@@ -263,16 +227,6 @@ export default function ConnectionButton({
     link.click();
     document.body.removeChild(link);
   };
-
-  // Display loading state
-  if (connectionStatus === "loading") {
-    return (
-      <Button variant="outline" disabled>
-        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-        Loading...
-      </Button>
-    );
-  }
 
   // Display status-based buttons
   switch (connectionStatus) {

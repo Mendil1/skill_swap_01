@@ -12,6 +12,8 @@ import NetworkMonitorWrapper from "@/components/network-monitor-wrapper";
 import { CommonResourceHints, PerformanceBudgetMonitor } from "@/components/resource-hints";
 import { IntelligentPrefetch } from "@/components/intelligent-prefetch";
 import { AuthProvider } from "@/components/auth-provider";
+import { Session, SupabaseClient } from "@supabase/supabase-js";
+import { Database } from "@/types/supabase";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,44 +25,44 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createClient();
-  // Safely get session with error handling for invalid refresh tokens
-  let user = null;
+async function getInitialSession(supabase: SupabaseClient<Database>): Promise<Session | null> {
   try {
     const { data, error } = await supabase.auth.getSession();
 
-    // If there's an invalid refresh token error, clear the session
-    if (
-      error &&
-      (error.message.includes("Invalid Refresh Token") ||
-        error.message.includes("Refresh Token Not Found"))
-    ) {
-      console.log("[Layout] Invalid refresh token detected, clearing session");
-      try {
-        await supabase.auth.signOut();
-      } catch (signOutError) {
-        console.error("[Layout] Error during signOut:", signOutError);
-      }
-    } else if (!error && data?.session) {
-      // Verify session with server for security
-      try {
-        const { data: userData, error: userError } = await supabase.auth.getUser();
-        if (userError) {
-          console.log("[Layout] Session verification failed, clearing session");
-          await supabase.auth.signOut();
-        } else {
-          user = userData.user;
-        }
-      } catch (verificationError) {
-        console.error("[Layout] Error verifying user:", verificationError);
-        user = data.session.user; // Fallback to session user
-      }
+    if (error) {
+      console.error("[Layout] Error getting session:", error.message);
+      return null;
     }
-  } catch (error) {
-    console.error("[Layout] Error getting session:", error);
-    // Continue with user = null
+
+    if (!data.session) {
+      return null;
+    }
+
+    // Verify the session on the server
+    const { error: userError } = await supabase.auth.getUser();
+
+    if (userError) {
+      console.warn("[Layout] Session verification failed:", userError.message);
+      // This might happen if the token is expired or invalid. Attempt to sign out.
+      await supabase.auth.signOut();
+      return null;
+    }
+
+    return data.session;
+  } catch (e) {
+    if (e instanceof Error) {
+      console.error("[Layout] Exception getting session:", e.message);
+    } else {
+      console.error("[Layout] An unknown error occurred while getting session:", e);
+    }
+    return null;
   }
+}
+
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
+  const session = await getInitialSession(supabase);
+  const user = session?.user ?? null;
 
   // Define navigation links to use in both desktop and mobile nav
   const navLinks = [
@@ -158,7 +160,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             </div>
           </div>
         </header>
-        <AuthProvider>
+        <AuthProvider session={session}>
           <main className="flex-1">{children}</main>
         </AuthProvider>
         <footer className="mt-12 bg-slate-900 py-12 text-white">

@@ -155,8 +155,8 @@ async function SkillsList({ query }: { query?: string }) {
   // Use a more efficient query that does initial filtering on the server side
   let usersQuery = supabase.from("users").select(
     `
-    user_id, 
-    full_name, 
+    user_id,
+    full_name,
     email,
     bio,
     availability
@@ -227,8 +227,8 @@ async function SkillsList({ query }: { query?: string }) {
               (us.type === "offer" || us.type === "both")
           )
           .map((us) => ({
-            skill_id: us.skills[0]?.skill_id || "",
-            name: us.skills[0]?.name || "",
+            skill_id: us.skills?.skill_id || "",
+            name: us.skills?.name || "",
           })) || [];
 
       const userRequestedSkills =
@@ -239,8 +239,8 @@ async function SkillsList({ query }: { query?: string }) {
               (us.type === "request" || us.type === "both")
           )
           .map((us) => ({
-            skill_id: us.skills[0]?.skill_id || "",
-            name: us.skills[0]?.name || "",
+            skill_id: us.skills?.skill_id || "",
+            name: us.skills?.name || "",
           })) || [];
 
       return {
@@ -338,9 +338,9 @@ async function SkillsList({ query }: { query?: string }) {
                               </Badge>
                             ))}
                             {user.offered_skills.length > 3 && (
-                              <Badge 
+                              <Badge
                                 key={`offered-more-${user.user_id}`}
-                                variant="outline" 
+                                variant="outline"
                                 className="bg-white"
                               >
                                 +{user.offered_skills.length - 3} more
@@ -368,9 +368,9 @@ async function SkillsList({ query }: { query?: string }) {
                               </Badge>
                             ))}
                             {user.requested_skills.length > 3 && (
-                              <Badge 
+                              <Badge
                                 key={`requested-more-${user.user_id}`}
-                                variant="outline" 
+                                variant="outline"
                                 className="bg-white"
                               >
                                 +{user.requested_skills.length - 3} more

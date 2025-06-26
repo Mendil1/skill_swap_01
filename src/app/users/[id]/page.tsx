@@ -63,6 +63,41 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
     return notFound();
   }
 
+  // Fetch connection status
+  let connectionStatus:
+    | "none"
+    | "pending-sent"
+    | "pending-received"
+    | "accepted"
+    | "rejected"
+    | "loading" = "loading";
+  let connectionId: string | null = null;
+
+  if (currentUser && !isOwnProfile) {
+    const { data: connectionData } = await supabase
+      .from("connection_requests")
+      .select("connection_id, sender_id, status")
+      .or(
+        `and(sender_id.eq.${currentUser.id},receiver_id.eq.${userId}),and(sender_id.eq.${userId},receiver_id.eq.${currentUser.id})`
+      )
+      .single();
+
+    if (connectionData) {
+      connectionId = connectionData.connection_id;
+      if (connectionData.status === "accepted") {
+        connectionStatus = "accepted";
+      } else if (connectionData.status === "rejected") {
+        connectionStatus = "rejected";
+      } else if (connectionData.sender_id === currentUser.id) {
+        connectionStatus = "pending-sent";
+      } else {
+        connectionStatus = "pending-received";
+      }
+    } else {
+      connectionStatus = "none";
+    }
+  }
+
   // Split skills into offered and requested
   const offeredSkills = (userSkills || []).filter(
     (item) => item.type === "offer" || item.type === "both"
@@ -124,10 +159,12 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
                   </Button>
                 </Link>
               ) : (
-                <ConnectionButton 
-                  currentUserId={currentUser?.id || ''}
+                <ConnectionButton
+                  currentUserId={currentUser?.id || ""}
                   profileUserId={userId}
                   profileUserName={userData.full_name.split(" ")[0]}
+                  initialConnectionStatus={connectionStatus}
+                  initialConnectionId={connectionId}
                 />
               )}
             </div>
@@ -217,11 +254,11 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
                       className="border-b pb-4 last:border-0"
                     >
                       <h3 className="font-medium text-lg mb-1">
-                        {skill.skills[0]?.name}
+                        {skill.skills?.name}
                       </h3>
-                      {skill.skills[0]?.description && (
+                      {skill.skills?.description && (
                         <p className="text-slate-600">
-                          {skill.skills[0]?.description}
+                          {skill.skills?.description}
                         </p>
                       )}
                     </div>
@@ -283,11 +320,11 @@ export default async function UserProfilePage({ params }: UserProfileProps) {
                       className="border-b pb-4 last:border-0"
                     >
                       <h3 className="font-medium text-lg mb-1">
-                        {skill.skills[0]?.name}
+                        {skill.skills?.name}
                       </h3>
-                      {skill.skills[0]?.description && (
+                      {skill.skills?.description && (
                         <p className="text-slate-600">
-                          {skill.skills[0]?.description}
+                          {skill.skills?.description}
                         </p>
                       )}
                     </div>
